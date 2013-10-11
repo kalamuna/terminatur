@@ -1,0 +1,21 @@
+{
+    "name":"kalamuna/terminatur",
+    "description":"Where terminus ends, terminatur begins.",
+    "homepage":"https://github.com/kalamuna/terminatur",
+    "license":"MIT",
+    "authors":[
+        {
+            "name":"Mike Pirog"
+        },
+        {
+            "name":"Will Hastings"
+        }
+    ],
+    "require":{
+        "php":">=5.3.3",
+        "pantheon-systems/terminus": "dev-master"
+    },
+    "support":{
+        "issues":"https://github.com/kalamuna/terminatur/issues"
+    }
+}
