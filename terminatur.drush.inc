@@ -8,8 +8,8 @@
  * If using in conjunction with KALABOX load some other things
  */
 if (isset($_SERVER['KALABOX']) && $_SERVER['KALABOX'] === 'on') {
-  include_once('terminus.log.inc');
-  include_once('terminus.host.inc');
+  include_once('terminatur.log.inc');
+  include_once('terminatur.host.inc');
 }
 
 /**
@@ -20,55 +20,90 @@ if (isset($_SERVER['KALABOX']) && $_SERVER['KALABOX'] === 'on') {
  * @return
  *   An associative array describing your command(s).
  */
-function kala_drush_command() {
+function terminatur_drush_command() {
   $items = array();
 
-  $items['kalacode'] = array(
-    'callback' => 'kala_code',
-    'description' => dt('Git clones your Pantheon site codebase'),
-    'aliases' => array('code', 'kc'),
+  $items['terminatur-code'] = array(
+    'description' => dt('Pulls down the code for a Pantheon site.'),
+    'aliases' => array('pullcode', 'pc'),
     'examples' => array(
-      'drush code sitename.dev' => 'Git clone of your pantheon site. Must use a sitename alias (format "sitename.dev") derived from a valid Pantheon alias as first argument.',
+      'drush pullcode mysite.dev' => 'Pulls down the code for the site at @pantheon.mysite.dev.',
     ),
-    'arguments' => array(
-      'site' => 'A sitename.dev, derived from a valid Pantheon site alias. Do not use the @pantheon convention for this alias as we are not using it as our site.',
-    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
+  );
 
-    'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
-  );
-  $items['kaladata'] = array(
-    'callback' => 'kala_data',
-    'description' => dt('Imports your Pantheon site database'),
-    'aliases' => array('data', 'kd'),
+  $items['terminatur-data'] = array(
+    'description' => dt('Pulls down the database for a Pantheon site.'),
+    'aliases' => array('pulldata', 'pd'),
     'examples' => array(
-      'drush data sitename.dev' => 'Import the DB of your pantheon site. Must use a sitename alias (format "sitename.dev") derived from a valid Pantheon alias as first argument.',
-    ),
-    'arguments' => array(
-      'site' => 'A sitename.dev, derived from a valid Pantheon site alias. Do not use the @pantheon convention for this alias as we are not using it as our site.',
+      'drush pulldata sitename.dev' => 'Pulls down the database for a site at @pantheon.mysite.dev.',
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
-  $items['kalafiles'] = array(
-    'callback' => 'kala_files',
-    'description' => dt('Imports your Pantheon site files'),
-    'aliases' => array('files', 'kf'),
+
+  $items['terminatur-files'] = array(
+    'description' => dt('Pulls down the files for a Pantheon site.'),
+    'aliases' => array('pullfiles', 'pf'),
     'examples' => array(
-      'drush files sitename.dev' => 'Imports the files of your pantheon site. Must use a sitename alias (format "sitename.dev") derived from a valid Pantheon alias as first argument.',
-    ),
-    'arguments' => array(
-      'site' => 'A sitename.dev, derived from a valid Pantheon site alias. Do not use the @pantheon convention for this alias as we are not using it as our site.',
+      'drush pullfiles sitename.dev' => 'Pulls down the files for a site at @pantheon.mysite.dev.',
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
-  $items['kalabuild'] = array(
-    'callback' => 'kala_build',
-    'description' => dt('Imports your Pantheon site'),
-    'aliases' => array('build', 'kb'),
+
+  $items['terminatur-pullsite'] = array(
+    'description' => dt('Pulls down the code, data and files for a Pantheon site. If on Kalabox creates hosts entry, vhost, alias and edits settings.php.'),
+    'aliases' => array('pullsite', 'ps'),
     'examples' => array(
-      'drush build sitename.dev' => 'Imports the code, data and files of your pantheon site. Must use a sitename alias (format "sitename.dev") derived from a valid Pantheon alias as first argument.',
+      'drush pullsite sitename.dev' => 'Pulls down the code and data for a site at @pantheon.mysite.dev. Sets up server side conf on Kalabox.',
+      'drush pullsite sitename.dev --files' => 'Pulls down the code, data and files for a site at @pantheon.mysite.dev. Sets up server side conf on Kalabox.',
     ),
-    'arguments' => array(
-      'site' => 'A sitename.dev, derived from a valid Pantheon site alias. Do not use the @pantheon convention for this alias as we are not using it as our site.',
+    'options' => array(
+      'files' => array(
+        'description' => 'Use this flag to also pull down your files.',
+      ),
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
+  );
+
+  $items['terminatur-refreshsite'] = array(
+    'callback' => 'terminatur_pullsite',
+    'description' => dt('Refreshes the code, data and files for a Pantheon site.'),
+    'aliases' => array('refreshsite', 'rs'),
+    'examples' => array(
+      'drush refreshsite sitename.dev' => 'Refreshes the code, data and files for a site at @pantheon.mysite.dev.',
+    ),
+    'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
+  );
+
+  $items['terminatur-crushsite'] = array(
+    'description' => dt('Removes a site completely.'),
+    'aliases' => array('crushsite', 'crush', 'wmd', 'cs'),
+    'examples' => array(
+      'drush crushsite sitename.dev' => 'Removes a site at @pantheon.mysite.dev or @kalabox.mysite.dev completely.',
+     ),
+    'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
+  );
+
+  // Include standard arguments for above commands
+  $common_args = array(
+    'site' => 'The sitename.dev part of @pantheon.sitename.dev.',
+  );
+  foreach ($items as $key => $array) {
+    if (isset($array['arguments'])) {
+      $items[$key]['arguments'] = array_merge($items[$key]['arguments'], $common_args);
+    }
+    else {
+      $items[$key]['arguments'] = $common_args;
+    }
+  }
+
+  $items['terminatur-newsite'] = array(
+    'description' => dt('Builds a new site locally.'),
+    'aliases' => array('newsite', 'ns'),
+    'examples' => array(
+      'drush newsite sitename' => 'Builds a new Panopoly site called sitename.',
+      'drush newsite sitename --profile=drupal7' => 'Builds a new vanilly Drupal 7 site called sitename.',
+      'drush newsite sitename --profile=openatrium --site-name="My Awesome Site"' => 'Builds a new Open Atrium site called sitename with human readable name "My Awesome Site".',
     ),
     'options' => array(
       'profile' => array(
@@ -79,80 +114,36 @@ function kala_drush_command() {
         'description' => 'Human readable meta data',
         'example-value' => '"My Awesome Site",BeastMode',
       ),
-      'files' => array(
-        'description' => 'Use this flag to also download your files',
-      ),
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
 
-  $items['kalarefresh'] = array(
-    'callback' => 'kala_build',
-    'description' => dt('Refreses your Pantheon site'),
-    'aliases' => array('krefresh', 'kr'),
-    'examples' => array(
-      'drush kr sitename.dev' => 'Refreshes the code, data and files of your pantheon site. Must use a sitename alias (format "sitename.dev") derived from a valid Pantheon alias as first argument.',
-    ),
+  $items['terminatur-aliases'] = array(
+    'description' => dt('Grabs your Pantheon aliases and parses them for use with terminatur.'),
+    'aliases' => array('talias', 'ta'),
     'arguments' => array(
-      'site' => 'A sitename.dev, derived from a valid Pantheon site alias. Do not use the @pantheon convention for this alias as we are not using it as our site.',
+      'email' => 'Email address of dashboard account.',
     ),
-    'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
-  );
-  $items['kaladestroy'] = array(
-    'callback' => 'kala_destroy',
-    'description' => dt('Removes a pantheon site'),
-    'aliases' => array('destroy', 'crush', 'wmb', 'kd'),
+    'options' => array(
+      'password' => array(
+        'description' => 'Optional: include password for script-friendly use.',
+        'example-value' => 'mypassword',
+      ),
+    ),
     'examples' => array(
-      'drush crush sitename.dev' => 'Deletes the Pantheon site. Must use a sitename alias (format "sitename.dev") derived from a valid Pantheon alias as first argument.',
+      'drush talias arnold@terminatur.com --password=illbeback' => 'Deletes the Pantheon site. Must use a sitename alias (format "sitename.dev") derived from a valid Pantheon alias as first argument.',
      ),
-    'arguments' => array(
-      'site' => 'A sitename.dev, derived from a valid Pantheon site alias. Do not use the @pantheon convention for this alias as we are not using it as our site.',
-    ),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
 
   return $items;
 }
 
-
 /**
- * Implementation of hook_drush_help().
- *
- * This function is called whenever a drush user calls
- * 'drush help <name-of-your-command>'
- *
- * @param
- *   A string with the help section (prepend with 'drush:')
- *
- * @return
- *   A string with the help text for your command.
- */
-function kala_drush_help($section) {
-  switch ($section) {
-    case 'drush:kala':
-      return dt("Shows useful info.");
-    case 'drush:kalacode':
-      return dt("Gets Pantheon codebase.");
-    case 'drush:kaladata':
-      return dt("Gets Pantheon database.");
-    case 'drush:kalafiles':
-      return dt("Gets Pantheon files.");
-    case 'drush:kalabuild':
-      return dt("Builds your Pantheon site.");
-    case 'drush:kalabuild':
-      return dt("Refreshes your Pantheon site.");
-  }
-}
-
-
-
-
-/**
- * [kala_code description]
  * @param  array or string $site an array of the sites info or the uparsed machine argument
  * @return only on error
  */
-function kala_code($site = NULL){
+function drush_terminatur_terminatur_code($site = NULL){
   // Load up site only if it hasnt been passed in
   $args = drush_get_arguments();
   if (!is_array($site)) {
@@ -204,7 +195,7 @@ function kala_code($site = NULL){
  * @param  array or string $site an array of the sites info or the uparsed machine argument
  * @return only on failure
  */
-function kala_data($site = NULL){
+function drush_terminatur_terminatur_data($site = NULL){
   // Load uo site only if it hasnt been passed in
   $args = drush_get_arguments();
   if (!is_array($site)) {
@@ -259,7 +250,7 @@ function kala_data($site = NULL){
  * @param  array or string $site an array of the sites info or the uparsed machine argument
  * @return if fails
  */
-function kala_files($site){
+function drush_terminatur_terminatur_files($site){
   // Load up site byt only if not passed in
   $args = drush_get_arguments();
   if (!is_array($site)) {
@@ -299,7 +290,7 @@ function kala_files($site){
  * Create a new and fully instantiated site or build one that already exist on pantheon
  * @return when complete
  */
-function kala_build() {
+function drush_terminatur_terminatur_pullsite() {
 
   // Grab arguments and options
   $args = drush_get_arguments();
@@ -385,7 +376,7 @@ function kala_build() {
 /**
  * Obliterate a local site
  */
-function kala_destroy(){
+function drush_terminatur_terminatur_crushsite(){
 
   // Get and parse sitename
   $args = drush_get_arguments();
@@ -426,6 +417,18 @@ function kala_destroy(){
     _kala_remove_alias($site);
     drush_log('SITE = FUCKING CRUSHED', 'success');
   }
+}
+
+/**
+ * Obliterate a local site
+ */
+function drush_terminatur_terminatur_newsite() {
+}
+
+/**
+ * Obliterate a local site
+ */
+function drush_terminatur_terminatur_aliases() {
 }
 
 /**

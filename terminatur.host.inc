@@ -38,7 +38,7 @@ function terminatur_update_etc_hosts($hostname) {
 /**
  * Creates a vhost for a newly built or created site
  */
-function kala_vhost() {
+function terminuatur_vhost() {
   // Get the site machine name and parse it correctly
   $args = drush_get_arguments();
   $siteal = explode('.', $args[1]);
