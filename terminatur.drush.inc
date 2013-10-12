@@ -207,7 +207,16 @@ function drush_terminatur_code($sitename = FALSE){
     $destination = TERMINATUR_DEFAULT_WEBROOT;
   }
 
-  // @todo: some function to check for and return best download mode: GIT/SFTP/WGET?
+  // Build code callback function
+  $getcodefunc = '_drush_terminatur_code_' . $site['code']['method'];
+  drush_log("Downloading your code...");
+  $getcodefunc($site, $destination);
+}
+
+/**
+ * Gets the codebase for the Pantheon site with git
+ */
+function _drush_terminatur_code_git($site, $destination){
   // Check if the codebase already exists
   if (is_dir($destination . $site['machine-name'])) {
     if (drush_shell_exec("cat " . $destination . $site['machine-name'] . "/.git/config | grep url")) {
@@ -216,23 +225,46 @@ function drush_terminatur_code($sitename = FALSE){
       drush_shell_exec("rm /tmp/gitconfig" . $site['machine-name']);
 
       // Codebase does exist, just refresh that code
-      if ($gitconfig_string == "url = " . $site['git-connect']) {
+      if ($gitconfig_string == "url = " . $site['code']['git-connect']) {
         drush_shell_exec("git --git-dir=" . $destination . $site['machine-name'] . "/.git pull");
         // @todo: log message
-        return;
       }
     }
   }
   // Git clone for the first time
   else {
-    drush_shell_exec("mkdir " . $destination . $site['machine-name'] . " && cd " . $destination . " && git clone " . $site['git-connect']);
-    // @todo: log message
+    drush_shell_exec("mkdir " . $destination . $site['machine-name'] . " && cd " . $destination . " && git clone " . $site['code']['git-connect']);
+  }
+}
+
+/**
+ * Gets the codebase for the Pantheon site via S3 download
+ */
+function _drush_terminatur_code_download($site, $destination){
+  // Check to see if there actually is a download available
+  if ($site['code']['download-bucket'] == 'NONE') {
+    drush_log(dt('You need to make a backup on Pantheon first before you can get code this way.'), 'error');
     return;
   }
 
-  // @todo: log message
-}
+  // @todo: Refresh download data
+  // $site['code']['download-data'] = terminus_api_backup_download_url($site['uuid'], $site['env'], $site['code']['download-bucket'], 'code');
 
+  // Parse download data and begin the download
+  $result = $site['code']['download-data'];
+  $data = json_decode($result['json']);
+  $filename = strstr(basename($data->url), '?', '_');
+  $dir = strstr($filename, '.', true);
+  $cache_duration = 86400*365;
+  $path = _drush_download_file($data->url, TERMINATUR_TMP_DIR . $filename, $cache_duration);
+  if ($path || drush_get_context('DRUSH_SIMULATE')) {
+    drush_tarball_extract($path, TERMINATUR_TMP_DIR);
+    drush_shell_exec("mv " . TERMINATUR_TMP_DIR . $dir . " " . $destination . $site['machine-name']);
+  }
+  else {
+    drush_log(dt("Download failed. You may want to run 'drush ta' to refresh your download links."), 'error');
+  }
+}
 
 /**
  * Gets the database for the Pantheon site
@@ -269,7 +301,6 @@ function drush_terminatur_data($sitename = FALSE){
   if (!drush_shell_exec("mysql -u" . $db_user . " -p" . $db_pass . " -h" . $db_host . " -e \"create database " . $site['local-db'] . "\"")) {
     // @todo: log message
   }
-
   // Unreap my heart: make sure DB server is awake
   if (!drush_shell_exec("drush @pantheon." . $site['machine-name'] . "." . $site['env'] . " status")) {
     // @todo: log message
@@ -476,5 +507,5 @@ function drush_terminatur_newsite() {
  * Refresh and reparse Pantheon alias file.
  */
 function drush_terminatur_aliases() {
-  $aliases = terminatur_bootstrap(TRUE);
+  return terminatur_bootstrap(TRUE);
 }
