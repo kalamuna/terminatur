@@ -14,7 +14,6 @@ define('ALIASES_FILE', '/etc/drush/pantheon.aliases.drushrc.php'); // @todo: mig
  * necessary setup steps.
  */
 function terminatur_bootstrap($force_refresh = FALSE) {
-  // @todo: do we want to do pantheon auth here or do we want user to run that command first?
   $pantheon_keys = drush_cache_get('pantheon-keys', 'terminatur');
   if (!$pantheon_keys) {
     // Check for a SSH key that works with Pantheon.
@@ -24,6 +23,11 @@ function terminatur_bootstrap($force_refresh = FALSE) {
       $pantheon_keys = array(_terminatur_set_up_key());
     }
     drush_cache_set('pantheon-keys', $pantheon_keys, 'terminatur');
+  }
+
+  if (file_exists(getenv('HOME') . '/.ssh/' . TERMINATUR_SSH_KEY)) {
+    drush_shell_exec('eval "$(ssh-agent)"');
+    drush_shell_exec('ssh-add ' . getenv('HOME') . '/.ssh/' . TERMINATUR_SSH_KEY);
   }
 
   // Download and parase the aliases file if it's not there.
@@ -54,6 +58,7 @@ function _terminatur_get_session() {
     return $session_data;
   }
   // Otherwise, authenticate with Terminus.
+  // @todo: we need a way to do this that is not interactive for kalaboxage
   $email = drush_prompt(dt('Pantheon dashboard email'), NULL, TRUE);
   drush_terminus_pantheon_auth($email);
   // @todo Handle authentication failure.
@@ -182,7 +187,7 @@ function _terminatur_parse_aliases() {
     $aliases[$key]['db-db'] = $matches[5];
 
     // Build Code optionz
-    $aliases[$key]['git-connect'] = "ssh://codeserver.dev." . $aliases[$key]['uuid'] . "@codeserver.dev." . $aliases[$key]['uuid'] . ".drush.in:2222/~/repository.git";
+    $aliases[$key]['git-connect'] = "ssh://codeserver.dev." . $aliases[$key]['uuid'] . "@codeserver.dev." . $aliases[$key]['uuid'] . ".drush.in:2222/~/repository.git " . $aliases[$key]['machine-name'];
   }
 
   // Create output string

@@ -210,7 +210,7 @@ function drush_terminatur_code($sitename = FALSE){
   }
   // Git clone for the first time
   else {
-    drush_shell_exec("git clone " . $site['git-connect']);
+    drush_shell_exec("mkdir " . $destination . $site['machine-name'] . " && cd " . $destination . " && git clone " . $site['git-connect']);
     // @todo: log message
     return;
   }
