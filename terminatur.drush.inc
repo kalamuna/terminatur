@@ -207,34 +207,35 @@ function drush_terminatur_code($sitename = FALSE){
     $destination = TERMINATUR_DEFAULT_WEBROOT;
   }
 
+  drush_log("Downloading your code...");
+
   // Build code callback function
   $getcodefunc = '_drush_terminatur_code_' . $site['code']['method'];
-  drush_log("Downloading your code...");
   $getcodefunc($site, $destination);
 }
 
 /**
  * Gets the codebase for the Pantheon site with git
  */
-function _drush_terminatur_code_git($site, $destination){
+function _drush_terminatur_code_git($site, $destination) {
   // Check if the codebase already exists
-  if (is_dir($destination . $site['machine-name'])) {
-    if (drush_shell_exec("cat " . $destination . $site['machine-name'] . "/.git/config | grep url")) {
-      drush_shell_exec("cat " . $destination . $site['machine-name'] . "/.git/config | grep url > " . TERMINATUR_TMP_DIR . "gitconfig" . $site['machine-name']);
-      $gitconfig_string = trim(file_get_contents(TERMINATUR_TMP_DIR . "gitconfig" . $site['machine-name']));
-      drush_shell_exec("rm /tmp/gitconfig" . $site['machine-name']);
+  if (file_exists($destination . $site['machine-name'] . "/.git/config")) {
+    drush_shell_exec("cat " . $destination . $site['machine-name'] . "/.git/config | grep url > " . TERMINATUR_TMP_DIR . "gitconfig" . $site['machine-name']);
+    $gitconfig_string = trim(file_get_contents(TERMINATUR_TMP_DIR . "gitconfig" . $site['machine-name']));
+    drush_shell_exec("rm /tmp/gitconfig" . $site['machine-name']);
 
-      // Codebase does exist, just refresh that code
-      if ($gitconfig_string == "url = " . $site['code']['git-connect']) {
-        drush_shell_exec("git --git-dir=" . $destination . $site['machine-name'] . "/.git pull");
-        // @todo: log message
-      }
+    // Codebase does exist, just refresh that code
+    if ($gitconfig_string == "url = " . $site['code']['git-connect']) {
+      drush_shell_exec("git --git-dir=" . $destination . $site['machine-name'] . "/.git pull");
+      return;
+    }
+    else {
+      drush_shell_exec("rm -rf " . $destination . $site['machine-name']);
     }
   }
+
   // Git clone for the first time
-  else {
-    drush_shell_exec("mkdir " . $destination . $site['machine-name'] . " && cd " . $destination . " && git clone " . $site['code']['git-connect']);
-  }
+  drush_shell_exec("mkdir " . $destination . $site['machine-name'] . " && cd " . $destination . " && git clone " . $site['code']['git-connect'] . " " . $site['machine-name']);
 }
 
 /**
@@ -259,6 +260,7 @@ function _drush_terminatur_code_download($site, $destination){
   $path = _drush_download_file($data->url, TERMINATUR_TMP_DIR . $filename, $cache_duration);
   if ($path || drush_get_context('DRUSH_SIMULATE')) {
     drush_tarball_extract($path, TERMINATUR_TMP_DIR);
+    drush_shell_exec("rm -rf " . $destination . $site['machine-name']);
     drush_shell_exec("mv " . TERMINATUR_TMP_DIR . $dir . " " . $destination . $site['machine-name']);
   }
   else {
@@ -296,6 +298,23 @@ function drush_terminatur_data($sitename = FALSE){
   if (!$db_host) {
     $db_host = TERMINATUR_DEFAULT_DB_HOST;
   }
+
+  // connection string function
+  // Check to see if there is code for this database already and whether it
+  // has a legit DB connection
+
+  // get and test mysql connect string
+  // if string is good then everything is in order
+    // use pipe
+  // if string is a no go then create DB, reset settings
+
+  // if no code
+  // create DB and import into DB if sql mode
+  //
+
+  // get connection string
+  // if true -> pipe and then fall back to DB DL < import
+  // if false -> download method just download archive to destin/machinename if download mode
 
   // Create a new database, silently fails if DB already exists
   if (!drush_shell_exec("mysql -u" . $db_user . " -p" . $db_pass . " -h" . $db_host . " -e \"create database " . $site['local-db'] . "\"")) {
