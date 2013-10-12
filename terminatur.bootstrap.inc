@@ -30,7 +30,7 @@ function terminatur_bootstrap($force_refresh = FALSE) {
     drush_shell_exec('ssh-add ' . getenv('HOME') . '/.ssh/' . TERMINATUR_SSH_KEY);
   }
 
-  // Download and parase the aliases file if it's not there.
+  // Download and parse the aliases file if it's not there.
   // @todo: might want to do some sort of validation here first?
   $aliases = array();
   if (!file_exists(ALIASES_FILE) || $force_refresh === TRUE) {
@@ -150,6 +150,26 @@ function _terminatur_parse_aliases() {
     return FALSE;
   }
 
+  // Strip out uneeded enviornments
+  _terminatur_strip_aliases($aliases);
+
+  // Add stuff
+  _terminatur_aliases_options($aliases);
+  _terminatur_code_options($aliases);
+  _terminatur_data_options($aliases);
+  _terminatur_file_options($aliases);
+
+  // Write to file
+  _terminatur_write_aliases($aliases);
+
+  // Return
+  return $aliases;
+}
+
+/**
+ * Remove uneeded environments
+ */
+function _terminatur_strip_aliases(&$aliases) {
   // Remove all non-dev environments
   // @todo: eventually we want this to be all dev and multisite environments
   // if (strpos($key, '.test') !== FALSE || strpos($key, '.live') !== FALSE) {
@@ -158,53 +178,106 @@ function _terminatur_parse_aliases() {
       unset($aliases[$key]);
     }
   }
+}
 
+/**
+ * Remove uneeded environments
+ */
+function _terminatur_aliases_options(&$aliases) {
   // Parse remaining aliases so they can be Terminatud
   foreach ($aliases as $key => $value) {
     // Get sitename and environment
     $site_parts = explode('.', $key);
     $aliases[$key]['machine-name'] = $site_parts[0];
     $aliases[$key]['env'] = $site_parts[1];
-    // @todo: figure out how to handle multiple levels
-    unset($aliases[$key]['path-aliases']);
 
     // Connect via terminus to get other fun stuff
     $aliases[$key]['uuid'] = terminus_get_site_uuid_by_name($aliases[$key]['machine-name']);
 
     // Build other relevant things
-    $aliases[$key]['local-db'] = str_replace("-", "_", $aliases[$key]['machine-name'] . "_local");
     $aliases[$key]['ssh-options'] .= ' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no';
     $aliases[$key]['built-from'] = $key;
+  }
+}
 
+/**
+ * Get options for code
+ */
+function _terminatur_code_options(&$aliases) {
+  // Check if user has git
+  $method = drush_shell_exec('git --version') ? 'git' : 'download';
+  foreach ($aliases as $key => $value) {
+    $aliases[$key]['code']['method'] = $method;
+    switch ($method) {
+      case 'git':
+        $aliases[$key]['code']['git-connect'] = "ssh://codeserver." . $aliases[$key]['env'] . "." . $aliases[$key]['uuid'] . "@codeserver." . $aliases[$key]['env'] . "." . $aliases[$key]['uuid'] . ".drush.in:2222/~/repository.git " . $aliases[$key]['machine-name'];
+        break;
+      case 'download':
+        $bucket = terminus_latest_bucket($aliases[$key]['uuid'], $aliases[$key]['env'], 'code');
+        $aliases[$key]['code']['download-bucket'] = $bucket ? $bucket : 'NONE';
+        // Get some more data if the bucket is there
+        if ($bucket) {
+          $aliases[$key]['code']['download-data'] = terminus_api_backup_download_url($aliases[$key]['uuid'], $aliases[$key]['env'], $bucket, 'code');
+        }
+        break;
+    }
+  }
+}
+
+/**
+ * Get options for data
+ */
+function _terminatur_data_options(&$aliases) {
+  foreach ($aliases as $key => $value) {
     // Build DB stuff
     $regex = '/^mysql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)$/';
     $matches = array();
     preg_match($regex, $aliases[$key]['db-url'], $matches);
-    $aliases[$key]['db-user'] = $matches[1];
-    $aliases[$key]['db-pass'] = $matches[2];
-    $aliases[$key]['db-host'] = $matches[3];
-    $aliases[$key]['db-port'] = $matches[4];
-    $aliases[$key]['db-db'] = $matches[5];
-
-    // Build Code optionz
-    $aliases[$key]['git-connect'] = "ssh://codeserver.dev." . $aliases[$key]['uuid'] . "@codeserver.dev." . $aliases[$key]['uuid'] . ".drush.in:2222/~/repository.git " . $aliases[$key]['machine-name'];
+    $aliases[$key]['data']['db-user'] = $matches[1];
+    $aliases[$key]['data']['db-pass'] = $matches[2];
+    $aliases[$key]['data']['db-host'] = $matches[3];
+    $aliases[$key]['data']['db-port'] = $matches[4];
+    $aliases[$key]['data']['db-db'] = $matches[5];
+    $aliases[$key]['data']['local-db'] = str_replace("-", "_", $aliases[$key]['machine-name'] . "_local");
   }
+}
 
+/**
+ * Get options for data
+ */
+function _terminatur_file_options(&$aliases) {
+}
+
+/**
+ * Write parsed Pantheon aliases
+ */
+function _terminatur_write_aliases(&$aliases) {
   // Create output string
+  $indent = "  ";
   $output = "<?php \n";
   $output .= "// TERMINATUR PARSED PANTHEON ALIASES \n\n";
   foreach ($aliases as $site) {
-    $test == $test;
     $output .= "\$aliases['" . $site['machine-name'] . "." . $site['env'] . "'] = array(\n";
     foreach ($site as $key => $value) {
-      $output .= "  '" . $key . "' => '" . $value . "',\n";
+      $output .= is_array($value) ? _terminatur_write_next_level($key, $value, $indent) : $indent . "'" . $key . "' => '" . $value . "',\n";
     }
     $output .= ");\n";
   }
 
   // Write file
   file_put_contents(ALIASES_FILE, $output);
+}
 
-  // Return
-  return $aliases;
+/**
+ * Helper function to write parsed Pantheon aliases
+ */
+function _terminatur_write_next_level($label, $stuff, $indent) {
+  $output = $indent . "'" . $label . "' => array(\n";
+  $close = $indent . "),\n";
+  $indent .= $indent;
+  foreach ($stuff as $key => $value) {
+    $output .= is_array($value) ? _terminatur_write_next_level($key, $value, $indent) : $indent . "'" . $key . "' => '" . $value . "',\n";
+  }
+  $output .= $close;
+  return $output;
 }
