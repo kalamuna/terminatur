@@ -76,6 +76,12 @@ function terminatur_drush_command() {
   $items['terminatur-files'] = array(
     'description' => dt('Pulls down the files for a Pantheon site.'),
     'aliases' => array('pullfiles', 'pf'),
+    'options' => array(
+      'destination' => array(
+        'description' => 'The destination of your webroot.',
+        'example-value' => '/var/www/',
+      ),
+    ),
     'examples' => array(
       'drush pullfiles sitename.dev' => 'Pulls down the files for a site at @pantheon.mysite.dev.',
     ),
@@ -101,6 +107,24 @@ function terminatur_drush_command() {
     'callback' => 'terminatur_pullsite',
     'description' => dt('Refreshes the code, data and files for a Pantheon site.'),
     'aliases' => array('refreshsite', 'rs'),
+    'options' => array(
+      'destination' => array(
+        'description' => 'The destination of your webroot.',
+        'example-value' => '/var/www/',
+      ),
+      'user' => array(
+        'description' => 'A MySQL user with creds to create DBz.',
+        'example-value' => 'root',
+      ),
+      'password' => array(
+        'description' => 'The password for the MySQL user.',
+        'example-value' => 'password',
+      ),
+      'host' => array(
+        'description' => 'The host of the MySQL server.',
+        'example-value' => 'localhost',
+      ),
+    ),
     'examples' => array(
       'drush refreshsite sitename.dev' => 'Refreshes the code, data and files for a site at @pantheon.mysite.dev.',
     ),
@@ -153,15 +177,6 @@ function terminatur_drush_command() {
   $items['terminatur-aliases'] = array(
     'description' => dt('Grabs your Pantheon aliases and parses them for use with terminatur.'),
     'aliases' => array('talias', 'ta'),
-    'arguments' => array(
-      'email' => 'Email address of dashboard account.',
-    ),
-    'options' => array(
-      'password' => array(
-        'description' => 'Optional: include password for script-friendly use.',
-        'example-value' => 'mypassword',
-      ),
-    ),
     'examples' => array(
       'drush talias arnold@terminatur.com --password=illbeback' => 'Deletes the Pantheon site. Must use a sitename alias (format "sitename.dev") derived from a valid Pantheon alias as first argument.',
      ),
@@ -262,7 +277,7 @@ function drush_terminatur_data($sitename = FALSE){
 
   // Downloading and importing the data
   // Trying SQL-SYNC-PIPE first
-  if (drush_shell_exec("cd " . $destination . $site['machine-name'] . " && drush pipe @" . $site['machine-name'] . "." . $site['env'] . " -y --disable=pantheon_apachesolr --ssh-options='" . $site['ssh-options'] . "'")) {
+  if (!drush_shell_exec("cd " . $destination . $site['machine-name'] . " && drush pipe @pantheon." . $site['machine-name'] . "." . $site['env'] . " @self -y --disable=pantheon_apachesolr --ssh-options='" . $site['ssh-options'] . "'")) {
   }
   // Using MYSQLDUMP Method if SSP fails
   else {
