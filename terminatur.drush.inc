@@ -5,16 +5,16 @@
  */
 
 // Constants
-define('TERMINATUR_TMP_DIR', sys_get_temp_dir());
+define('TERMINATUR_TMP_DIR', sys_get_temp_dir() . "/");
 define('TERMINATUR_DEFAULT_WEBROOT', '/var/www/');
 define('TERMINATUR_DEFAULT_DB_USER', 'root');
 define('TERMINATUR_DEFAULT_DB_PASS', 'password');
 define('TERMINATUR_DEFAULT_DB_HOST', 'localhost');
 
 // Load up core stuff
-# include_once('terminatur.bootstrap.inc');
+include_once('terminatur.bootstrap.inc');
 
-// If using in conjunction with KALABOX load some other things
+// If using in conjunction with KALABOX/KALASTACK load some other things
 if (isset($_SERVER['KALABOX']) && $_SERVER['KALABOX'] === 'on') {
   include_once('terminatur.log.inc');
   include_once('terminatur.host.inc');
@@ -194,28 +194,28 @@ function drush_terminatur_code($sitename = FALSE){
 
   // @todo: some function to check for and return best download mode: GIT/SFTP/WGET?
   // Check if the codebase already exists
-  if (is_dir($destination . $site['machine_name'])) {
-    if (drush_shell_exec("cat " . $destination . $site['machine_name'] . "/.git/config | grep url")) {
-      drush_shell_exec("cat " . $destination . $site['machine_name'] . "/.git/config | grep url > " . TERMINATUR_TMP_DIR . "gitconfig" . $site['machine_name']);
-      $gitconfig_string = trim(file_get_contents(TERMINATUR_TMP_DIR . "gitconfig" . $site['machine_name']));
-      drush_shell_exec("rm /tmp/gitconfig" . $site['machine_name']);
+  if (is_dir($destination . $site['machine-name'])) {
+    if (drush_shell_exec("cat " . $destination . $site['machine-name'] . "/.git/config | grep url")) {
+      drush_shell_exec("cat " . $destination . $site['machine-name'] . "/.git/config | grep url > " . TERMINATUR_TMP_DIR . "gitconfig" . $site['machine-name']);
+      $gitconfig_string = trim(file_get_contents(TERMINATUR_TMP_DIR . "gitconfig" . $site['machine-name']));
+      drush_shell_exec("rm /tmp/gitconfig" . $site['machine-name']);
 
       // Codebase does exist, just refresh that code
-      if ($gitconfig_string == "url = " . $site['git_connect']) {
-        drush_shell_exec("git --git-dir=" . $destination . $site['machine_name'] . "/.git pull");
-        drush_log(dt('Code refreshed!'), 'success');
+      if ($gitconfig_string == "url = " . $site['git-connect']) {
+        drush_shell_exec("git --git-dir=" . $destination . $site['machine-name'] . "/.git pull");
+        // @todo: log message
         return;
       }
     }
   }
   // Git clone for the first time
   else {
-    drush_shell_exec("git clone " . $site['git_connect']);
-    drush_log(dt('Code cloned!'), 'success');
+    drush_shell_exec("git clone " . $site['git-connect']);
+    // @todo: log message
     return;
   }
 
-  drush_log(dt('Looks like you already have stuff in the target directory. Remove it and try again!'), 'error');
+  // @todo: log message
 }
 
 
@@ -251,25 +251,25 @@ function drush_terminatur_data($sitename = FALSE){
   }
 
   // Create a new database, silently fails if DB already exists
-  if (!drush_shell_exec("mysql -u" . $db_user . " -p" . $db_pass . " -h" . $db_host . " -e \"create database " . $site['local_db'] . "\"")) {
+  if (!drush_shell_exec("mysql -u" . $db_user . " -p" . $db_pass . " -h" . $db_host . " -e \"create database " . $site['local-db'] . "\"")) {
     // @todo: log message
   }
 
   // Unreap my heart: make sure DB server is awake
-  if (!drush_shell_exec("drush @pantheon." . $site['machine_name'] . "." . $site['env'] . " status")) {
+  if (!drush_shell_exec("drush @pantheon." . $site['machine-name'] . "." . $site['env'] . " status")) {
     // @todo: log message
   }
 
   // Downloading and importing the data
   // Trying SQL-SYNC-PIPE first
-  if (drush_shell_exec("cd " $destination . $site['machine_name'] . " && drush pipe @" . $site['machine_name'] . "." . $site['env'] . " -y --disable=pantheon_apachesolr --ssh-options='" . $site['ssh'] . "'")) {
+  if (drush_shell_exec("cd " . $destination . $site['machine-name'] . " && drush pipe @" . $site['machine-name'] . "." . $site['env'] . " -y --disable=pantheon_apachesolr --ssh-options='" . $site['ssh-options'] . "'")) {
   }
   // Using MYSQLDUMP Method if SSP fails
   else {
-    if (!drush_shell_exec("mysqldump -u" . $site['db_user'] . " -h" . $site['db_host'] ." -P" . $site['db_port'] ." -p" . $site['db_pass'] . " -CceKqQ --add-drop-table --add-locks --create-options --no-autocommit --single-transaction " . $site['db_db'] ." > " . TERMINATUR_TMP_DIR . $site['uuid'] .".sql")) {
+    if (!drush_shell_exec("mysqldump -u" . $site['db-user'] . " -h" . $site['db-host'] ." -P" . $site['db-port'] ." -p" . $site['db-pass'] . " -CceKqQ --add-drop-table --add-locks --create-options --no-autocommit --single-transaction " . $site['db-db'] ." > " . TERMINATUR_TMP_DIR . $site['uuid'] .".sql")) {
       // @todo: log message
     }
-    if (!drush_shell_exec("mysql -u" . $db_user . " -p" . $db_pass . " -h" . $db_host . " " . $site['local_db'] . " < "TERMINATUR_TMP_DIR . $site['uuid'] .".sql")) {
+    if (!drush_shell_exec("mysql -u" . $db_user . " -p" . $db_pass . " -h" . $db_host . " " . $site['local-db'] . " < " . TERMINATUR_TMP_DIR . $site['uuid'] . ".sql")) {
       // @todo: log message
     }
   }
@@ -461,6 +461,5 @@ function drush_terminatur_newsite() {
  * Refresh and reparse Pantheon alias file.
  */
 function drush_terminatur_aliases() {
-  $aliases = terminatur_parse_aliases();
-  //$aliases = terminus_bootstrap(TRUE);
+  $aliases = terminatur_bootstrap(TRUE);
 }

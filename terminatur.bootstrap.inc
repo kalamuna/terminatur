@@ -14,6 +14,7 @@ define('ALIASES_FILE', '/etc/drush/pantheon.aliases.drushrc.php'); // @todo: mig
  * necessary setup steps.
  */
 function terminatur_bootstrap($force_refresh = FALSE) {
+  // @todo: do we want to do pantheon auth here or do we want user to run that command first?
   $pantheon_keys = drush_cache_get('pantheon-keys', 'terminatur');
   if (!$pantheon_keys) {
     // Check for a SSH key that works with Pantheon.
@@ -27,11 +28,17 @@ function terminatur_bootstrap($force_refresh = FALSE) {
 
   // Download and parase the aliases file if it's not there.
   // @todo: might want to do some sort of validation here first?
+  $aliases = array();
   if (!file_exists(ALIASES_FILE) || $force_refresh === TRUE) {
     _terminatur_download_aliases();
-    _terminatur_parse_aliases();
+    $aliases = _terminatur_parse_aliases();
   }
+  else {
+    require ALIASES_FILE;
+  }
+
   // @todo Validate the pantheon aliases file.
+  return $aliases;
 }
 
 /**
@@ -125,7 +132,6 @@ function _terminatur_download_aliases() {
   drush_invoke_process('@self', 'pantheon-aliases', array(), array('destination' => TERMINATUR_TMP_DIR . 'terminatur.aliases.tmp'));
 }
 
-
 /**
  * Parse Pantheon alias file for use with terminatur
  */
@@ -139,41 +145,61 @@ function _terminatur_parse_aliases() {
     return FALSE;
   }
 
-  // Do bunch of fun stuff!
+  // Remove all non-dev environments
+  // @todo: eventually we want this to be all dev and multisite environments
+  // if (strpos($key, '.test') !== FALSE || strpos($key, '.live') !== FALSE) {
   foreach ($aliases as $key => $value) {
-    // Remove all non-dev environments
-    // @todo: eventually we want this to be all dev and multisite environments
-    // if (strpos($key, '.test') !== FALSE || strpos($key, '.live') !== FALSE) {
     if (strpos($key, '.dev') === FALSE) {
       unset($aliases[$key]);
     }
-    else {
-      // Get sitename and environment
-      $site_parts = explode('.', $key);
-      $aliases[$key]['machine_name'] = $site_parts[0];
-      $aliases[$key]['env'] = $site_parts[1];
-
-      // Connect via terminus to get other fun stuff
-      $aliases[$key]['uuid'] = terminus_get_site_uuid_by_name($aliases[$key]['sitename']);
-
-      // Build other relevant things
-      $aliases[$key]['local_db'] = str_replace("-", "_", $aliases[$key]['sitename'] . "_local");
-      $aliases[$key]['ssh'] .= ' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no';
-      $aliases[$key]['built-from'] = $key;
-
-      // Build DB stuff
-      $regex = '/^mysql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)$/';
-      $matches = array();
-      preg_match($regex, $aliases[$key]['db_url'], $matches);
-      $aliases[$key]['db_user'] = $matches[1];
-      $aliases[$key]['db_pass'] = $matches[2];
-      $aliases[$key]['db_host'] = $matches[3];
-      $aliases[$key]['db_port'] = $matches[4];
-      $aliases[$key]['db_db'] = $matches[5];
-
-      // Build Code optionz
-      $aliases[$key]['git_connect'] = "ssh://codeserver.dev." . $aliases[$key]['uuid'] . "@codeserver.dev." . $aliases[$key]['uuid'] . ".drush.in:2222/~/repository.git";
-
-    }
   }
+
+  // Parse remaining aliases so they can be Terminatud
+  foreach ($aliases as $key => $value) {
+    // Get sitename and environment
+    $site_parts = explode('.', $key);
+    $aliases[$key]['machine-name'] = $site_parts[0];
+    $aliases[$key]['env'] = $site_parts[1];
+    // @todo: figure out how to handle multiple levels
+    unset($aliases[$key]['path-aliases']);
+
+    // Connect via terminus to get other fun stuff
+    $aliases[$key]['uuid'] = terminus_get_site_uuid_by_name($aliases[$key]['machine-name']);
+
+    // Build other relevant things
+    $aliases[$key]['local-db'] = str_replace("-", "_", $aliases[$key]['machine-name'] . "_local");
+    $aliases[$key]['ssh-options'] .= ' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no';
+    $aliases[$key]['built-from'] = $key;
+
+    // Build DB stuff
+    $regex = '/^mysql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)$/';
+    $matches = array();
+    preg_match($regex, $aliases[$key]['db-url'], $matches);
+    $aliases[$key]['db-user'] = $matches[1];
+    $aliases[$key]['db-pass'] = $matches[2];
+    $aliases[$key]['db-host'] = $matches[3];
+    $aliases[$key]['db-port'] = $matches[4];
+    $aliases[$key]['db-db'] = $matches[5];
+
+    // Build Code optionz
+    $aliases[$key]['git-connect'] = "ssh://codeserver.dev." . $aliases[$key]['uuid'] . "@codeserver.dev." . $aliases[$key]['uuid'] . ".drush.in:2222/~/repository.git";
+  }
+
+  // Create output string
+  $output = "<?php \n";
+  $output .= "// TERMINATUR PARSED PANTHEON ALIASES \n\n";
+  foreach ($aliases as $site) {
+    $test == $test;
+    $output .= "\$aliases['" . $site['machine-name'] . "." . $site['env'] . "'] = array(\n";
+    foreach ($site as $key => $value) {
+      $output .= "  '" . $key . "' => '" . $value . "',\n";
+    }
+    $output .= ");\n";
+  }
+
+  // Write file
+  file_put_contents(ALIASES_FILE, $output);
+
+  // Return
+  return $aliases;
 }
