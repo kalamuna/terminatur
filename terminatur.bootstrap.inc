@@ -5,8 +5,16 @@
  */
 
 // Constants
+// Only use this directory if exists and is writeable otherwise use home
+if (is_dir("/etc/drush") && is_writable("/etc/drush")) {
+  define('TERMINATUR_DRUSH_DIR', '/etc/drush/');
+}
+else {
+  define('TERMINATUR_DRUSH_DIR', getenv('HOME') . DIRECTORY_SEPARATOR . '.drush' . DIRECTORY_SEPARATOR);
+}
 define('TERMINATUR_SSH_KEY', 'terminatur.id_rsa');
-define('TERMINATUR_PANTHEON_ALIASES_FILE', '/etc/drush/pantheon.aliases.drushrc.php');
+define('TERMINATUR_PANTHEON_ALIASES_FILE', TERMINATUR_DRUSH_DIR . 'pantheon.aliases.drushrc.php');
+define('TERMINATUR_LOCAL_ALIASES_FILE', TERMINATUR_DRUSH_DIR . 'local.aliases.drushrc.php');
 
 /**
  * Ensures user has set up SSH and has downloaded their Pantheon aliases file.
@@ -249,6 +257,20 @@ function _terminatur_data_options(&$aliases) {
  * Get options for data
  */
 function _terminatur_file_options(&$aliases) {
+    // Check if user has git
+  $method = drush_shell_exec('rsync --version') ? 'rsync' : 'download';
+  foreach ($aliases as $key => $value) {
+    $aliases[$key]['terminatur']['files']['method'] = $method;
+    switch ($method) {
+      case 'rsync':
+        $aliases[$key]['terminatur']['files']['git-connect'] = "ssh://codeserver." . $aliases[$key]['env'] . "." . $aliases[$key]['uuid'] . "@codeserver." . $aliases[$key]['env'] . "." . $aliases[$key]['uuid'] . ".drush.in:2222/~/repository.git";
+        break;
+      case 'download':
+        $bucket = terminus_latest_bucket($aliases[$key]['uuid'], $aliases[$key]['env'], 'files');
+        $aliases[$key]['terminatur']['files']['download-bucket'] = $bucket ? $bucket : 'NONE';
+        break;
+    }
+  }
 }
 
 /**

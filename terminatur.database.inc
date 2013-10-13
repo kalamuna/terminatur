@@ -29,7 +29,7 @@ function _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_hos
       drush_invoke_process('', 'sql-sync-pipe', array("@pantheon." . $site['machine-name'] . "." . $site['env'], "@local." . $site['machine-name'] . TERMINATUR_LOCAL_SUFFIX), array('disable' => 'pantheon_apachesolr', 'ssh-options' => $site['ssh-options'], 'y', 'progress'));
     }
     else {
-      drush_log(dt("You need to have a sql-sync-pipe installed to use this command."), 'error');
+      drush_log(dt("You need to have sql-sync-pipe installed to use this command."), 'error');
       return;
     }
   }

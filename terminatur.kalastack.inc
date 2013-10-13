@@ -5,36 +5,6 @@
  *  kalastack.inc: Functions to integration with Kalastack
  */
 
-/** HOSTS FILE STUFF **/
-/**
- * Remove hostname from hosts file
- * @param  [string] $hostname [the hostname to be added]
- */
-function terminatur_remove_etc_hosts($hostname) {
-  // Remove hosts
-  drush_shell_exec("sed /" . $hostname . "/d /etc/hosts > /tmp/hosts");
-  drush_shell_exec("sudo cp -f /tmp/hosts /etc/hosts");
-  drush_shell_exec("rm /tmp/hosts");
-}
-
-/**
- * Update the hosts file
- * @param  [string] $hostname [the hostname to be added]
- */
-function terminatur_update_etc_hosts($hostname) {
-    // Create new hosts file
-    $hosts_file_str = file_get_contents("/etc/hosts");
-    $new_host = "127.0.0.1\t$hostname\n";
-    if (!strstr($hosts_file_str, $new_host)) {
-      $new_hosts_file_str =  $new_host . $hosts_file_str;
-      file_put_contents("/tmp/hosts", $new_hosts_file_str);
-      drush_shell_exec("sudo cp -f /tmp/hosts /etc/hosts");
-      #drush_shell_exec("sudo service nginx restart");
-      drush_shell_exec("rm /tmp/hosts");
-    }
-}
-
-/** VHOST STUFF **/
 /**
  * Creates a vhost for a newly built or created site
  */

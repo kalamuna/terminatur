@@ -5,9 +5,6 @@
  *  aliases.inc: Helper functions to manipulate local alias settings
  */
 
-// Constants
-define('TERMINATUR_LOCAL_ALIASES_FILE', '/etc/drush/local.aliases.drushrc.php'); // @todo: might want to get this location in an OS agnostic way?
-
 /**
  * Build a local alias
  * @param  array or string $site an array of the sites info or the uparsed machine argument

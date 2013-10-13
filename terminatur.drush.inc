@@ -20,7 +20,9 @@ include_once('terminatur.files.inc');
 include_once('terminatur.settings.inc');
 include_once('terminatur.aliases.inc');
 
-// If using in conjunction with KALABOX/KALASTACK load some other things
+// If used in conjunction with KALABOX/KALASTACK load some other things
+// @todo: Eventually we will want to provide some basic handling for
+// most webserver/hosts files.
 if (isset($_SERVER['KALABOX']) && $_SERVER['KALABOX'] === 'on') {
   include_once('terminatur.log.inc');
   include_once('terminatur.kalastack.inc');
