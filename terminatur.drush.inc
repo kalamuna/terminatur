@@ -105,18 +105,6 @@ function terminatur_drush_command() {
       'drush pullsite sitename.dev --files' => 'Pulls down the code, data and files for a site at @pantheon.mysite.dev. Sets up server side conf on Kalabox.',
     ),
     'options' => array(
-      'files' => array(
-        'description' => 'Use this flag to also pull down your files.',
-      ),
-    ),
-    'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
-  );
-
-  $items['terminatur-refreshsite'] = array(
-    'callback' => 'terminatur_pullsite',
-    'description' => dt('Refreshes the code, data and files for a Pantheon site.'),
-    'aliases' => array('refreshsite', 'rs'),
-    'options' => array(
       'destination' => array(
         'description' => 'The destination of your webroot.',
         'example-value' => '/var/www/',
@@ -133,9 +121,16 @@ function terminatur_drush_command() {
         'description' => 'The host of the MySQL server.',
         'example-value' => 'localhost',
       ),
-    ),
-    'examples' => array(
-      'drush refreshsite sitename.dev' => 'Refreshes the code, data and files for a site at @pantheon.mysite.dev.',
+      'port' => array(
+        'description' => 'The port of the MySQL server.',
+        'example-value' => '3306',
+      ),
+      'pipe' => array(
+        'description' => 'Use a pipe instead of a backup. This is slower but it will grab the most up to date data.',
+      ),
+      'files' => array(
+        'description' => 'Use this flag to also pull down your files.',
+      ),
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
@@ -309,60 +304,74 @@ function drush_terminatur_files($sitename = FALSE) {
  * @return when complete
  */
 function drush_terminatur_pullsite($sitename = FALSE) {
+  // Grabs info about the site
   if (!$sitename) {
     $sitename = drush_get_option('sitename');
   }
   $sites = terminatur_bootstrap();
   $site = $sites[$sitename];
+  if (!$site) {
+    drush_log(dt("Not a valid Pantheon site."), 'error');
+    return;
+  }
 
-  // Require git/mysql/rsync
+  if ($site['terminatur']['database']['method'] != 'mysql') {
+    drush_log(dt("You need at least MySQL for this to work."), 'error');
+    return;
+  }
 
-  // Grab arguments and options
-  $args = drush_get_arguments();
-  $profile = drush_get_option('profile');
+  // Gets some options or sets defaults
+  $destination = drush_get_option('destination');
+  if (!$destination) {
+    $destination = TERMINATUR_DEFAULT_WEBROOT;
+  }
+  $db_user = drush_get_option('user');
+  if (!$db_user) {
+    $db_user = TERMINATUR_DEFAULT_DB_USER;
+  }
+  $db_pass = drush_get_option('password');
+  if (!$db_pass) {
+    $db_pass = TERMINATUR_DEFAULT_DB_PASS;
+  }
+  $db_host = drush_get_option('host');
+  if (!$db_host) {
+    $db_host = TERMINATUR_DEFAULT_DB_HOST;
+  }
+  $db_port = drush_get_option('port');
+  if (!$db_port ) {
+    $db_port  = TERMINATUR_DEFAULT_DB_PORT;
+  }
+  $pipe = drush_get_option('pipe');
   $files = drush_get_option('files');
-  $site_name = drush_get_option('site-name');
 
-  // Set a default profile if not set
-  if (!isset($profile)) {
-    $profile = 'panopoly';
+  drush_log(dt("Downloading site..."), 'warning');
+
+  // Set command arguments
+  $command_args = array($site['machine-name'] . "." . $site['env']);
+
+  // Code & Data
+  drush_invoke_process('', 'terminatur-code', $command_args, array('destination' => $destination));
+  $data_options = array(
+    'destination' => $destination,
+    'user' => $db_user,
+    'password' => $db_pass,
+    'host' => $db_host,
+    'port' => $db_port,
+    'pipe',
+  );
+  drush_invoke_process('', 'terminatur-data', $command_args, $data_options);
+
+  // If applicable, files
+  if ($files) {
+    drush_invoke_process('', 'terminatur-files', $command_args, array('destination' => $destination));
   }
 
-  // Build an array of info for the site
-  $site = _kala_build_site($args[1]);
-
-  // START IT UP!
-  drush_print('WE GONE BUILD THIS HERE SITE NOW! STANDBY LADDY/LASS');
-
-  // Build a pantheon site
-  if (isset($site['pantheon']) && $site['pantheon'] === TRUE) {
-    // Get the code
-    kala_code($site);
-    drush_log('Codebase: Qapla\'!', 'success');
-
-    // Add some settings for kalabox
-    _kala_reset_settings($site);
-    drush_log('Settings: Rebuilt!, Check git status', 'success');
-
-    // Get the data
-    kala_data($site);
-    drush_log('Database: Qapla\'!', 'success');
-
-    // Get the files but only run if option is set to do so
-    if ($files) {
-      kala_files($site);
-      drush_log('Files: Qapla\'!', 'success');
-    }
-  }
-  // Spin up a new site
   // Vhost and cleanupz
-  drush_shell_exec("sudo drush vhost " . $args[1]);
-  drush_shell_exec("cd /var/www/" . $site['site'] . " && drush cc all -y");
-  drush_log('Drush: We clear yo cache', 'success');
-  _kala_add_alias($site);
-  drush_log('Success: ' . $site['site-name'] .   ' has been built!', 'success');
-
-  return;
+  //drush_shell_exec("sudo drush vhost " . $args[1]);
+  //drush_shell_exec("cd /var/www/" . $site['site'] . " && drush cc all -y");
+  //drush_log('Drush: We clear yo cache', 'success');
+  //_kala_add_alias($site);
+  //drush_log('Success: ' . $site['site-name'] .   ' has been built!', 'success');
 }
 
 /**
@@ -416,6 +425,15 @@ function drush_terminatur_crushsite($sitename = FALSE) {
  * Obliterate a local site
  */
 function drush_terminatur_newsite() {
+
+  $profile = drush_get_option('profile');
+  $site_name = drush_get_option('site-name');
+
+  // Set a default profile if not set
+  if (!isset($profile)) {
+    $profile = 'panopoly';
+  }
+
   if (!is_dir("/var/www/" . $site['site'])) {
     // Set sitename
     $site['site-name'] = $site_name ? $site_name : $site['site'];

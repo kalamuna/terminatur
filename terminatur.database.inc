@@ -26,7 +26,9 @@ function _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_hos
       }
       // Unreap my heart: make sure DB server is awake
       drush_invoke_process("@pantheon." . $site['machine-name'] . "." . $site['env'], 'core-status', array(), array());
-      drush_invoke_process('', 'sql-sync-pipe', array("@pantheon." . $site['machine-name'] . "." . $site['env'], "@local." . $site['machine-name'] . TERMINATUR_LOCAL_SUFFIX), array('disable' => 'pantheon_apachesolr', 'ssh-options' => $site['ssh-options'], 'y', 'progress'));
+      $command_args = array("@pantheon." . $site['machine-name'] . "." . $site['env'], "@local." . $site['machine-name'] . TERMINATUR_LOCAL_SUFFIX);
+      $command_options = array('disable' => 'pantheon_apachesolr', 'ssh-options' => $site['ssh-options'], 'y', 'progress');
+      drush_invoke_process('', 'sql-sync-pipe', $command_args, $command_options);
     }
     else {
       drush_log(dt("You need to have sql-sync-pipe installed to use this command."), 'error');
