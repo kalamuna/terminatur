@@ -2,7 +2,7 @@
 
  /**
  * @file
- *  host.inc: Functions to build vhosts and settings files on Kalabox
+ *  kalastack.inc: Functions to integration with Kalastack
  */
 
 /** HOSTS FILE STUFF **/
