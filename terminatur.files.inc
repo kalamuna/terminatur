@@ -6,29 +6,16 @@
  */
 
 /**
- * @file
- *  database.inc: Helper functions to grab data
- */
-
-/**
  * Gets the DB either by pipe or download adn then imports into mysql
  *
  * Validates and builds settings files it applicable.
  */
-function _terminatur_files_rysnc($site, $destination) {
+function _terminatur_files_rsync($site, $destination) {
   // Build files directories as appropriate
   _terminatur_files_set_up_dirs($site, $destination);
-
-
-    // RSYNCing files from pantheon
-    /*
-    drush_shell_exec("rsync -rlztv --ipv4 -e 'ssh " . $site['ssh'] . "' --exclude 'js' --exclude 'css' --exclude 'ctools' --exclude 'imagecache' --exclude 'xmlsitemap' --exclude 'backup_migrate' --exclude 'styles' --exclude 'less' " . $site['env'] . "." . $site['id'] . "@appserver." . $site['env'] . "." . $site['id'] . ".drush.in:files /var/www/" . $site['site'] . "/sites/default/");
-    drush_log('Consider your files N*SYNC', 'success');
+  if (!drush_shell_exec("rsync " . $site['terminatur']['files']['rsync']['options'] . " " . $site['terminatur']['files']['rsync']['ssh'] . " " . $site['terminatur']['files']['rsync']['excludes'] . " " . $site['terminatur']['files']['rsync']['remote-files'] . " " . _terminatur_files_download_location($site, $destination) . TERMINATUR_DEFAULT_DEFAULT_DIR)) {
+    // @todo fail message
   }
-  else {
-    return;
-  }
-  */
 }
 
 /**

@@ -247,7 +247,7 @@ function _terminatur_data_options(&$aliases) {
 }
 
 /**
- * Get options for data
+ * Get options for files
  */
 function _terminatur_file_options(&$aliases) {
     // Check if user has rsync
@@ -258,9 +258,9 @@ function _terminatur_file_options(&$aliases) {
       case 'rsync':
         $rsync = array(
           'options' => '-rlztv --ipv4',
-          'ssh' => "-e 'ssh " . $aliases[$key]['ssh-options'] . "'",
-          'excludes' => "--exclude 'js' --exclude 'css' --exclude 'ctools' --exclude 'imagecache' --exclude 'xmlsitemap' --exclude 'backup_migrate' --exclude 'styles' --exclude 'less'",
-          'remote-files' => $aliases[$key]['remote-host'] . ":files",
+          'ssh' => addcslashes("-e 'ssh " . $aliases[$key]['ssh-options'] . "'", "'"),
+          'excludes' => addcslashes("--exclude 'js' --exclude 'css' --exclude 'ctools' --exclude 'imagecache' --exclude 'xmlsitemap' --exclude 'backup_migrate' --exclude 'styles' --exclude 'less'", "'"),
+          'remote-files' => $aliases[$key]['remote-user'] . "@" . $aliases[$key]['remote-host'] . ":files",
         );
         $aliases[$key]['terminatur']['files']['rsync'] = $rsync;
         break;
