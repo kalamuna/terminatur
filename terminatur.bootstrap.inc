@@ -238,17 +238,10 @@ function _terminatur_data_options(&$aliases) {
     $aliases[$key]['terminatur']['database']['db-port'] = $matches[4];
     $aliases[$key]['terminatur']['database']['db-db'] = $matches[5];
     $aliases[$key]['terminatur']['database']['local-db'] = str_replace("-", "_", $aliases[$key]['machine-name'] . "_local");
-
     $aliases[$key]['terminatur']['database']['method'] = $method;
-    switch ($method) {
-      case 'mysql':
 
-        break;
-      case 'download':
-        $bucket = terminus_latest_bucket($aliases[$key]['uuid'], $aliases[$key]['env'], 'database');
-        $aliases[$key]['terminatur']['database']['download-bucket'] = $bucket ? $bucket : 'NONE';
-        break;
-    }
+    $bucket = terminus_latest_bucket($aliases[$key]['uuid'], $aliases[$key]['env'], 'database');
+    $aliases[$key]['terminatur']['database']['download-bucket'] = $bucket ? $bucket : 'NONE';
   }
 }
 
@@ -263,13 +256,13 @@ function _terminatur_file_options(&$aliases) {
  */
 function _terminatur_get_download_link($site, $element = 'code') {
   // Refresh download link
-  if ($site[$element]['download-bucket'] == 'NONE') {
+  if ($site['terminatur'][$element]['download-bucket'] == 'NONE') {
     drush_log(dt('You need to make a backup on Pantheon first before you can get stuff this way.'), 'error');
     return FALSE;
   }
   // Make sure we are online with pantheon
   $session_data = _terminatur_get_session();
-  return terminus_api_backup_download_url($site['uuid'], $site['env'], $site[$element]['download-bucket'], $element);
+  return terminus_api_backup_download_url($site['uuid'], $site['env'], $site['terminatur'][$element]['download-bucket'], $element);
 }
 
 /**

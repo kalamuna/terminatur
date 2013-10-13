@@ -49,6 +49,6 @@ function _terminatur_code_download($site, $destination) {
     drush_shell_exec("mv " . TERMINATUR_TMP_DIR . $dir . " " . $destination . $site['machine-name']);
   }
   else {
-    drush_log(dt("Download failed. You may want to run 'drush ta' to refresh your download links."), 'error');
+    drush_log(dt("Download failed."), 'error');
   }
 }

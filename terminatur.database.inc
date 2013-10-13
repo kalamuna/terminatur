@@ -17,31 +17,42 @@ function _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_hos
     return;
   }
 
+  // Try to get the most up to date data with sql-sync-pipe
   if ($pipe) {
-    if (!$local_site = _terminatur_aliases_get_local_site($site['machine-name'])) {
-      drush_log(dt("You need to have a local site set up to use pipe."), 'error');
+    if (function_exists('drush_sql_sync_pipe')) {
+      if (!$local_site = _terminatur_aliases_get_local_site($site['machine-name'])) {
+        drush_log(dt("You need to have a local site set up to use pipe."), 'error');
+        return;
+      }
+      // Unreap my heart: make sure DB server is awake
+      drush_invoke_process("@pantheon." . $site['machine-name'] . "." . $site['env'], 'core-status', array(), array());
+      drush_invoke_process('', 'sql-sync-pipe', array("@pantheon." . $site['machine-name'] . "." . $site['env'], "@local." . $site['machine-name'] . TERMINATUR_LOCAL_SUFFIX), array('disable' => 'pantheon_apachesolr', 'ssh-options' => $site['ssh-options'], 'y', 'progress'));
+    }
+    else {
+      drush_log(dt("You need to have a sql-sync-pipe installed to use this command."), 'error');
       return;
     }
-    // Unreap my heart: make sure DB server is awake
-    drush_invoke_process("@pantheon." . $site['machine-name'] . "." . $site['env'], 'core-status', array(), array());
-    drush_invoke_process('', 'sql-sync-pipe', array("@pantheon." . $site['machine-name'] . "." . $site['env'], "@local." . $site['machine-name'] . TERMINATUR_LOCAL_SUFFIX), array('disable' => 'pantheon_apachesolr', 'ssh-options' => $site['ssh-options'], 'y', 'progress'));
   }
 
-  /*
-  // Downloading and importing the data
-  // Trying SQL-SYNC-PIPE first
-  if (!drush_shell_exec("cd " . $destination . $site['machine-name'] . " && drush pipe @pantheon." . $site['machine-name'] . "." . $site['env'] . " @self -y --disable=pantheon_apachesolr --ssh-options='" . $site['ssh-options'] . "'")) {
+  // Download and import the latest archive
+  if (!$site['terminatur']['database']['download-data'] = _terminatur_get_download_link($site, 'database')) {
+    return;
   }
-  // Using MYSQLDUMP Method if SSP fails
-  else {
-    if (!drush_shell_exec("mysqldump -u" . $site['db-user'] . " -h" . $site['db-host'] ." -P" . $site['db-port'] ." -p" . $site['db-pass'] . " -CceKqQ --add-drop-table --add-locks --create-options --no-autocommit --single-transaction " . $site['db-db'] ." > " . TERMINATUR_TMP_DIR . $site['uuid'] .".sql")) {
-      // @todo: log message
-    }
-    if (!drush_shell_exec("mysql -u" . $db_user . " -p" . $db_pass . " -h" . $db_host . " " . $site['local-db'] . " < " . TERMINATUR_TMP_DIR . $site['uuid'] . ".sql")) {
-      // @todo: log message
-    }
+
+  // Parse download data and begin the download
+  $result = $site['terminatur']['database']['download-data'];
+  $data = json_decode($result['json']);
+  $filename = strstr(basename($data->url), '?', '_');
+  $dir = strstr($filename, '.', true);
+  $cache_duration = 86400*365;
+  $path = _drush_download_file($data->url, TERMINATUR_TMP_DIR . $filename, $cache_duration);
+  if (!$path && !drush_get_context('DRUSH_SIMULATE')) {
+    drush_log(dt("Download failed. You may want to run 'drush ta' to refresh your download links."), 'error');
+    return;
   }
-  */
+  if (!drush_shell_exec("gunzip " . $path . " -f && " . $databases['default']['default']['connect'] . " < " . str_replace('sql.gz', 'sql', $path))) {
+    drush_log(dt("Import failed. Make sure you have gunzip installed."), 'error');
+  }
 }
 
 /**
@@ -60,7 +71,7 @@ function _terminatur_data_download($site, $destination, $db_user, $db_pass, $db_
   $cache_duration = 86400*365;
   $path = _drush_download_file($data->url, getenv('HOME') .  DIRECTORY_SEPARATOR . $filename, $cache_duration);
   if (!$path && !drush_get_context('DRUSH_SIMULATE')) {
-    drush_log(dt("Download failed. You may want to run 'drush ta' to refresh your download links."), 'error');
+    drush_log(dt("Download failed."), 'error');
   }
 }
 
@@ -82,8 +93,9 @@ function _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, 
         }
       }
       // This means we should have a legit settings file with legit db creds
-      // Let's build a local alias for it
+      // Let's build a local alias for it and generate a connection string
       _terminatur_aliases_add_alias($site, $destination);
+      $databases['default']['default']['connect'] = "mysql -u" . $databases['default']['default']['username'] . " -p" . $databases['default']['default']['password'] . " -h" . $databases['default']['default']['host'] . " " . $databases['default']['default']['database'];
       return $databases;
     }
   }
