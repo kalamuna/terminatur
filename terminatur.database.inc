@@ -93,9 +93,8 @@ function _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, 
         }
       }
       // This means we should have a legit settings file with legit db creds
-      // Let's build a local alias for it and generate a connection string
+      // Let's build a local alias for it
       _terminatur_aliases_add_alias($site, $destination);
-      $databases['default']['default']['connect'] = "mysql -u" . $databases['default']['default']['username'] . " -p" . $databases['default']['default']['password'] . " -h" . $databases['default']['default']['host'] . " " . $databases['default']['default']['database'];
       return $databases;
     }
   }
@@ -148,5 +147,7 @@ function _terminatur_data_test_db_connection(&$databases) {
     return FALSE;
   }
   $mysqli->close();
+  // Include a connection string
+  $databases['default']['default']['connect'] = "mysql -u" . $databases['default']['default']['username'] . " -p" . $databases['default']['default']['password'] . " -h" . $databases['default']['default']['host'] . " " . $databases['default']['default']['database'];
   return $databases;
 }
