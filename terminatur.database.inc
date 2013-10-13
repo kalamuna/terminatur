@@ -24,8 +24,7 @@ function _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_hos
     }
     // Unreap my heart: make sure DB server is awake
     drush_invoke_process("@pantheon." . $site['machine-name'] . "." . $site['env'], 'core-status', array(), array());
-    drush_invoke_process('@local.cvt.kala', 'sql-sync-pipe', array('@pantheon.cvt.dev', '@local.cvt.kala'), array('disable' => 'pantheon_apachesolr', 'ssh-options' => $site['ssh-options'], 'y'));
-    //drush_invoke_process('@self', 'pantheon-aliases', array(), array('destination' => TERMINATUR_TMP_DIR . 'terminatur.aliases.tmp'));
+    drush_invoke_process('', 'sql-sync-pipe', array("@pantheon." . $site['machine-name'] . "." . $site['env'], "@local." . $site['machine-name'] . TERMINATUR_LOCAL_SUFFIX), array('disable' => 'pantheon_apachesolr', 'ssh-options' => $site['ssh-options'], 'y', 'progress'));
   }
 
   /*

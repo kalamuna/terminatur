@@ -18,24 +18,22 @@ function _terminatur_aliases_add_alias($site, $destination) {
     file_put_contents(TERMINATUR_LOCAL_ALIASES_FILE, "");
     $aliases = array();
   }
-  // Define suffix depending on environment
-  $suffix = KALABOX ? '.kala' : '.local';
 
   // Load the local aliases file
   require TERMINATUR_LOCAL_ALIASES_FILE;
 
   // Restore to first made first listed
   $aliases = array_reverse($aliases);
-  if (!isset($aliases[$site['machine-name'] . $suffix])) {
+  if (!isset($aliases[$site['machine-name'] . TERMINATUR_LOCAL_SUFFIX])) {
     // Build the local alias
-    $aliases[$site['machine-name'] . $suffix] = array(
+    $aliases[$site['machine-name'] . TERMINATUR_LOCAL_SUFFIX] = array(
       'root' => $destination . $site['machine-name'],
-      'uri' => $site['machine-name'] . $suffix,
+      'uri' => $site['machine-name'] . TERMINATUR_LOCAL_SUFFIX,
       'read-name' => $site['machine-name'],
     );
     // If built from somewhere, indicate that here
     if ($site['built-from']) {
-      $aliases[$site['machine-name'] . $suffix]['built-from'] = $site['built-from'];
+      $aliases[$site['machine-name'] . TERMINATUR_LOCAL_SUFFIX]['built-from'] = $site['built-from'];
     }
   }
 
@@ -74,12 +72,9 @@ function _terminatur_aliases_remove_alias($site, $destination) {
     return;
   }
 
-  // Define suffix depending on environment
-  $suffix = KALABOX ? '.kala' : '.local';
-
   // Load the kala aliases file
-  if (isset($aliases[$site['machine-name'] . $suffix])) {
-    unset($aliases[$site['machine-name'] . $suffix]);
+  if (isset($aliases[$site['machine-name'] . TERMINATUR_LOCAL_SUFFIX])) {
+    unset($aliases[$site['machine-name'] . TERMINATUR_LOCAL_SUFFIX]);
   }
 
   // Build output
@@ -109,7 +104,5 @@ function _terminatur_aliases_get_local_site($machine_name) {
   else {
     return FALSE;
   }
-  // Define suffix depending on environment
-  $suffix = KALABOX ? '.kala' : '.local';
-  return $aliases[$machine_name . $suffix];
+  return $aliases[$machine_name . TERMINATUR_LOCAL_SUFFIX];
 }

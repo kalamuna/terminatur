@@ -26,6 +26,12 @@ if (isset($_SERVER['KALABOX']) && $_SERVER['KALABOX'] === 'on') {
   include_once('terminatur.kalastack.inc');
   define('KALABOX', TRUE);
 }
+if (KALABOX) {
+  define('TERMINATUR_LOCAL_SUFFIX', '.kala');
+}
+else {
+  define('TERMINATUR_LOCAL_SUFFIX', '.local');
+}
 
 /**
  * Implementation of hook_drush_command().
@@ -275,7 +281,7 @@ function drush_terminatur_data($sitename = FALSE) {
   drush_log(dt("Downloading data..."), 'warning');
 
   // Build data callback function
-  $get_data_func = '_terminatur_data_' . $site['database']['method'];
+  $get_data_func = '_terminatur_data_' . $site['terminatur']['database']['method'];
   $get_data_func($site, $destination, $db_user, $db_pass, $db_host, $db_port, $pipe);
 }
 
