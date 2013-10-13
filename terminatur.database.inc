@@ -34,7 +34,7 @@ function _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_hos
     }
   }
 
-  // Download and import the latest archive
+  // Get the latest archive
   if (!$site['terminatur']['database']['download-data'] = _terminatur_get_download_link($site, 'database')) {
     return;
   }
@@ -48,10 +48,18 @@ function _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_hos
   $path = _drush_download_file($data->url, TERMINATUR_TMP_DIR . $filename, $cache_duration);
   if (!$path && !drush_get_context('DRUSH_SIMULATE')) {
     drush_log(dt("Download failed. You may want to run 'drush ta' to refresh your download links."), 'error');
-    return;
+    $fail = TRUE;
   }
+
+  // Import downloaded data
   if (!drush_shell_exec("gunzip " . $path . " -f && " . $databases['default']['default']['connect'] . " < " . str_replace('sql.gz', 'sql', $path))) {
     drush_log(dt("Import failed. Make sure you have gunzip installed."), 'error');
+    $fail = TRUE;
+  }
+
+  // Might as well try pipe on fail
+  if ($fail) {
+    _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_host, $db_port, TRUE);
   }
 }
 
