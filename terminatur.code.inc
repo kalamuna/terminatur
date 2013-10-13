@@ -25,7 +25,7 @@ function _terminatur_code_git($site, $destination) {
     }
   }
   // Git clone for the first time
-  drush_shell_exec("mkdir " . $destination . $site['machine-name'] . " && cd " . $destination . " && git clone " . $site['code']['git-connect'] . " " . $site['machine-name']);
+  drush_shell_exec("mkdir " . $destination . $site['machine-name'] . " && cd " . $destination . " && git clone " . $site['terminatur']['code']['git-connect'] . " " . $site['machine-name']);
 }
 
 /**
