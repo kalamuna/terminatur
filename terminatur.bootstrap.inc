@@ -206,19 +206,16 @@ function _terminatur_aliases_options(&$aliases) {
 function _terminatur_code_options(&$aliases) {
   // Check if user has git
   $method = drush_shell_exec('git --version') ? 'git' : 'download';
+  $method = 'download';
   foreach ($aliases as $key => $value) {
     $aliases[$key]['code']['method'] = $method;
     switch ($method) {
       case 'git':
-        $aliases[$key]['code']['git-connect'] = "ssh://codeserver." . $aliases[$key]['env'] . "." . $aliases[$key]['uuid'] . "@codeserver." . $aliases[$key]['env'] . "." . $aliases[$key]['uuid'] . ".drush.in:2222/~/repository.git " . $aliases[$key]['machine-name'];
+        $aliases[$key]['code']['git-connect'] = "ssh://codeserver." . $aliases[$key]['env'] . "." . $aliases[$key]['uuid'] . "@codeserver." . $aliases[$key]['env'] . "." . $aliases[$key]['uuid'] . ".drush.in:2222/~/repository.git";
         break;
       case 'download':
         $bucket = terminus_latest_bucket($aliases[$key]['uuid'], $aliases[$key]['env'], 'code');
         $aliases[$key]['code']['download-bucket'] = $bucket ? $bucket : 'NONE';
-        // Get some more data if the bucket is there
-        if ($bucket) {
-          $aliases[$key]['code']['download-data'] = terminus_api_backup_download_url($aliases[$key]['uuid'], $aliases[$key]['env'], $bucket, 'code');
-        }
         break;
     }
   }
@@ -228,17 +225,31 @@ function _terminatur_code_options(&$aliases) {
  * Get options for data
  */
 function _terminatur_data_options(&$aliases) {
+  // Check if user has MySQL
+  $method = drush_shell_exec('git --version') ? 'mysql' : 'download';
+  $method = 'download';
   foreach ($aliases as $key => $value) {
     // Build DB stuff
     $regex = '/^mysql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)$/';
     $matches = array();
     preg_match($regex, $aliases[$key]['db-url'], $matches);
-    $aliases[$key]['data']['db-user'] = $matches[1];
-    $aliases[$key]['data']['db-pass'] = $matches[2];
-    $aliases[$key]['data']['db-host'] = $matches[3];
-    $aliases[$key]['data']['db-port'] = $matches[4];
-    $aliases[$key]['data']['db-db'] = $matches[5];
-    $aliases[$key]['data']['local-db'] = str_replace("-", "_", $aliases[$key]['machine-name'] . "_local");
+    $aliases[$key]['database']['db-user'] = $matches[1];
+    $aliases[$key]['database']['db-pass'] = $matches[2];
+    $aliases[$key]['database']['db-host'] = $matches[3];
+    $aliases[$key]['database']['db-port'] = $matches[4];
+    $aliases[$key]['database']['db-db'] = $matches[5];
+    $aliases[$key]['database']['local-db'] = str_replace("-", "_", $aliases[$key]['machine-name'] . "_local");
+
+    $aliases[$key]['database']['method'] = $method;
+    switch ($method) {
+      case 'mysql':
+
+        break;
+      case 'download':
+        $bucket = terminus_latest_bucket($aliases[$key]['uuid'], $aliases[$key]['env'], 'database');
+        $aliases[$key]['database']['download-bucket'] = $bucket ? $bucket : 'NONE';
+        break;
+    }
   }
 }
 
@@ -246,6 +257,20 @@ function _terminatur_data_options(&$aliases) {
  * Get options for data
  */
 function _terminatur_file_options(&$aliases) {
+}
+
+/**
+ * Get a download link for code, database or files
+ */
+function _terminatur_get_download_link($site, $element = 'code') {
+  // Refresh download link
+  if ($site[$element]['download-bucket'] == 'NONE') {
+    drush_log(dt('You need to make a backup on Pantheon first before you can get stuff this way.'), 'error');
+    return FALSE;
+  }
+  // Make sure we are online with pantheon
+  $session_data = _terminatur_get_session();
+  return terminus_api_backup_download_url($site['uuid'], $site['env'], $site[$element]['download-bucket'], $element);
 }
 
 /**
