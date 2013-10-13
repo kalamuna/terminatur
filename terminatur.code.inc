@@ -11,6 +11,7 @@
 function _terminatur_code_git($site, $destination) {
   // Check if the codebase already exists
   if (file_exists($destination . $site['machine-name'] . "/.git/config")) {
+    // @todo get this out of drush_shell_exec and into PHP
     drush_shell_exec("cat " . $destination . $site['machine-name'] . "/.git/config | grep url > " . TERMINATUR_TMP_DIR . "gitconfig" . $site['machine-name']);
     $gitconfig_string = trim(file_get_contents(TERMINATUR_TMP_DIR . "gitconfig" . $site['machine-name']));
     drush_shell_exec("rm /tmp/gitconfig" . $site['machine-name']);
@@ -25,7 +26,8 @@ function _terminatur_code_git($site, $destination) {
     }
   }
   // Git clone for the first time
-  drush_shell_exec("mkdir " . $destination . $site['machine-name'] . " && cd " . $destination . " && git clone " . $site['terminatur']['code']['git-connect'] . " " . $site['machine-name']);
+  mkdir($destination . $site['machine-name'], 0777, TRUE);
+  drush_shell_exec("cd " . $destination . " && git clone " . $site['terminatur']['code']['git-connect'] . " " . $site['machine-name']);
 }
 
 /**
@@ -44,9 +46,9 @@ function _terminatur_code_download($site, $destination) {
   $cache_duration = 86400*365;
   $path = _drush_download_file($data->url, TERMINATUR_TMP_DIR . $filename, $cache_duration);
   if ($path || drush_get_context('DRUSH_SIMULATE')) {
-    drush_tarball_extract($path, TERMINATUR_TMP_DIR);
+    drush_tarball_extract($path);
     drush_shell_exec("rm -rf " . $destination . $site['machine-name']);
-    drush_shell_exec("mv " . TERMINATUR_TMP_DIR . $dir . " " . $destination . $site['machine-name']);
+    rename(TERMINATUR_TMP_DIR . $dir, $destination . $site['machine-name']);
   }
   else {
     drush_log(dt("Download failed."), 'error');

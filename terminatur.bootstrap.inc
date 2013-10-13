@@ -250,13 +250,19 @@ function _terminatur_data_options(&$aliases) {
  * Get options for data
  */
 function _terminatur_file_options(&$aliases) {
-    // Check if user has git
+    // Check if user has rsync
   $method = drush_shell_exec('rsync --version') ? 'rsync' : 'download';
   foreach ($aliases as $key => $value) {
     $aliases[$key]['terminatur']['files']['method'] = $method;
     switch ($method) {
       case 'rsync':
-        $aliases[$key]['terminatur']['files']['git-connect'] = "ssh://codeserver." . $aliases[$key]['env'] . "." . $aliases[$key]['uuid'] . "@codeserver." . $aliases[$key]['env'] . "." . $aliases[$key]['uuid'] . ".drush.in:2222/~/repository.git";
+        $rsync = array(
+          'options' => '-rlztv --ipv4',
+          'ssh' => "-e 'ssh " . $aliases[$key]['ssh-options'] . "'",
+          'excludes' => "--exclude 'js' --exclude 'css' --exclude 'ctools' --exclude 'imagecache' --exclude 'xmlsitemap' --exclude 'backup_migrate' --exclude 'styles' --exclude 'less'",
+          'remote-files' => $aliases[$key]['remote-host'] . ":files",
+        );
+        $aliases[$key]['terminatur']['files']['rsync'] = $rsync;
         break;
       case 'download':
         $bucket = terminus_latest_bucket($aliases[$key]['uuid'], $aliases[$key]['env'], 'files');

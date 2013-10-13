@@ -280,37 +280,28 @@ function drush_terminatur_data($sitename = FALSE) {
  * @return if fails
  */
 function drush_terminatur_files($sitename = FALSE) {
+  // Grabs info about the site
   if (!$sitename) {
     $sitename = drush_get_option('sitename');
   }
   $sites = terminatur_bootstrap();
   $site = $sites[$sitename];
-
-  // Only run if its a panthoen site
-  if ($site['pantheon'] === TRUE) {
-    // Checking ot see ig the files firectory exists already
-    drush_print('We are now in the process of checking to see whether or not you have tried to sync these here filez before!');
-    if (is_dir("/var/www/" . $site['site'] . "/sites/default/files")) {
-      drush_log('you have!', 'success');
-    }
-    // Build the files directory and set its permissions if it doesnt exist yet
-    else {
-      mkdir("/var/www/" . $site['site'] . "/sites/default/files");
-      mkdir("/var/www/" . $site['site'] . "/sites/default/private");
-      drush_log('Building up some sweet sweet files directories for you', 'success');
-      // Settings this to 777 for now because its the only way to get file uploads to work properly with nfs sharing
-      drush_shell_exec("chmod 777 /var/www/" . $site['site'] . "/sites/default/files");
-      drush_shell_exec("chmod 777 /var/www/" . $site['site'] . "/sites/default/files/private");
-    }
-
-    // RSYNCing files from pantheon
-    drush_log('Doing that funky file sync tango. It feels good. Please wait...', 'success');
-    drush_shell_exec("rsync -rlztv --ipv4 -e 'ssh " . $site['ssh'] . "' --exclude 'js' --exclude 'css' --exclude 'ctools' --exclude 'imagecache' --exclude 'xmlsitemap' --exclude 'backup_migrate' --exclude 'styles' --exclude 'less' " . $site['env'] . "." . $site['id'] . "@appserver." . $site['env'] . "." . $site['id'] . ".drush.in:files /var/www/" . $site['site'] . "/sites/default/");
-    drush_log('Consider your files N*SYNC', 'success');
-  }
-  else {
+  if (!$site) {
+    drush_log(dt("Not a valid Pantheon site."), 'error');
     return;
   }
+
+  // Gets some options or sets defaults
+  $destination = drush_get_option('destination');
+  if (!$destination) {
+    $destination = TERMINATUR_DEFAULT_WEBROOT;
+  }
+
+  drush_log(dt("Downloading files..."), 'warning');
+
+  // Build data callback function
+  $get_files_func = '_terminatur_files_' . $site['terminatur']['files']['method'];
+  $get_files_func($site, $destination);
 }
 
 /**
