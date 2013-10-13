@@ -68,7 +68,7 @@ function _terminatur_data_download($site, $destination, $db_user, $db_pass, $db_
  * Gets a valid local MySQL connection string
  */
 function _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port) {
-  $db_url = 'mysql://' . $db_user . ':' . $db_pass . '@' . $db_host . ':' . $db_port . '/' . $site['database']['local-db'];
+  $db_url = 'mysql://' . $db_user . ':' . $db_pass . '@' . $db_host . ':' . $db_port . '/' . $site['terminatur']['database']['local-db'];
   // Check to see if code exists
   if (is_dir($destination . $site['machine-name'])) {
     // Validate settings file if applicable
