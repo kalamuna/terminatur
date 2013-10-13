@@ -206,7 +206,6 @@ function _terminatur_aliases_options(&$aliases) {
 function _terminatur_code_options(&$aliases) {
   // Check if user has git
   $method = drush_shell_exec('git --version') ? 'git' : 'download';
-  $method = 'download';
   foreach ($aliases as $key => $value) {
     $aliases[$key]['code']['method'] = $method;
     switch ($method) {
@@ -227,7 +226,6 @@ function _terminatur_code_options(&$aliases) {
 function _terminatur_data_options(&$aliases) {
   // Check if user has MySQL
   $method = drush_shell_exec('git --version') ? 'mysql' : 'download';
-  $method = 'download';
   foreach ($aliases as $key => $value) {
     // Build DB stuff
     $regex = '/^mysql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)$/';

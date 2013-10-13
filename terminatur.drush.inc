@@ -6,10 +6,14 @@
 
 // Constants
 define('TERMINATUR_TMP_DIR', sys_get_temp_dir() . "/");
+define('TERMINATUR_VALIDATION_STRING', 'Terminatur: 1b f3 18 cd 6b 59 45 55 d1 ae');
 define('TERMINATUR_DEFAULT_WEBROOT', '/var/www/');
 define('TERMINATUR_DEFAULT_DB_USER', 'root');
 define('TERMINATUR_DEFAULT_DB_PASS', 'password');
 define('TERMINATUR_DEFAULT_DB_HOST', 'localhost');
+define('TERMINATUR_DEFAULT_DB_PORT', '3306');
+
+
 
 // Load up core stuff
 include_once('terminatur.bootstrap.inc');
@@ -68,6 +72,10 @@ function terminatur_drush_command() {
       'host' => array(
         'description' => 'The host of the MySQL server.',
         'example-value' => 'localhost',
+      ),
+      'port' => array(
+        'description' => 'The port of the MySQL server.',
+        'example-value' => '3306',
       ),
       'pipe' => array(
         'description' => 'Use a pipe instead of a backup. This is slower but it will grab the most up to date data.',
@@ -217,8 +225,8 @@ function drush_terminatur_code($sitename = FALSE) {
   drush_log(dt("Downloading code..."), 'warning');
 
   // Build code callback function
-  $getcodefunc = '_terminatur_code_' . $site['code']['method'];
-  $getcodefunc($site, $destination);
+  $get_code_func = '_terminatur_code_' . $site['code']['method'];
+  $get_code_func($site, $destination);
 }
 
 /**
@@ -255,143 +263,16 @@ function drush_terminatur_data($sitename = FALSE) {
   if (!$db_host) {
     $db_host = TERMINATUR_DEFAULT_DB_HOST;
   }
+  $db_port = drush_get_option('port');
+  if (!$db_port ) {
+    $db_port  = TERMINATUR_DEFAULT_DB_PORT;
+  }
 
   drush_log(dt("Downloading data..."), 'warning');
 
   // Build data callback function
-  $getdatafunc = '_terminatur_data_' . $site['database']['method'];
-  $getdatafunc($site, $destination, $db_user, $db_pass, $db_host);
-}
-
-/**
- * Gets the codebase for the Pantheon site with git
- */
-function _terminatur_code_git($site, $destination) {
-  // Check if the codebase already exists
-  if (file_exists($destination . $site['machine-name'] . "/.git/config")) {
-    drush_shell_exec("cat " . $destination . $site['machine-name'] . "/.git/config | grep url > " . TERMINATUR_TMP_DIR . "gitconfig" . $site['machine-name']);
-    $gitconfig_string = trim(file_get_contents(TERMINATUR_TMP_DIR . "gitconfig" . $site['machine-name']));
-    drush_shell_exec("rm /tmp/gitconfig" . $site['machine-name']);
-
-    // Codebase does exist, just refresh that code
-    if ($gitconfig_string == "url = " . $site['code']['git-connect']) {
-      drush_shell_exec("git --git-dir=" . $destination . $site['machine-name'] . "/.git pull");
-      return;
-    }
-    else {
-      drush_shell_exec("rm -rf " . $destination . $site['machine-name']);
-    }
-  }
-
-  // Git clone for the first time
-  drush_shell_exec("mkdir " . $destination . $site['machine-name'] . " && cd " . $destination . " && git clone " . $site['code']['git-connect'] . " " . $site['machine-name']);
-}
-
-/**
- * Gets the codebase for the Pantheon site via S3 download
- */
-function _terminatur_code_download($site, $destination) {
-  // Get the download link data
-  if (!$site['code']['download-data'] = _terminatur_get_download_link($site, 'code')) {
-    return;
-  }
-
-  // Parse download data and begin the download
-  $result = $site['code']['download-data'];
-  $data = json_decode($result['json']);
-  $filename = strstr(basename($data->url), '?', '_');
-  $dir = strstr($filename, '.', true);
-  $cache_duration = 86400*365;
-  $path = _drush_download_file($data->url, TERMINATUR_TMP_DIR . $filename, $cache_duration);
-  if ($path || drush_get_context('DRUSH_SIMULATE')) {
-    drush_tarball_extract($path, TERMINATUR_TMP_DIR);
-    drush_shell_exec("rm -rf " . $destination . $site['machine-name']);
-    drush_shell_exec("mv " . TERMINATUR_TMP_DIR . $dir . " " . $destination . $site['machine-name']);
-  }
-  else {
-    drush_log(dt("Download failed. You may want to run 'drush ta' to refresh your download links."), 'error');
-  }
-}
-
-/**
- * Gets the DB either by pipe or download adn then imports into mysql
- *
- * Validates and builds settings files it applicable.
- */
-function _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_host) {
-  $test == _terminatur_data_get_connect_string($site, $destination, $db_user, $db_pass, $db_host);
-  /*
-  if (!drush_shell_exec("mysql -u" . $db_user . " -p" . $db_pass . " -h" . $db_host . " -e \"create database " . $site['local-db'] . "\"")) {
-    // @todo: log message
-  }
-  // Unreap my heart: make sure DB server is awake
-  if (!drush_shell_exec("drush @pantheon." . $site['machine-name'] . "." . $site['env'] . " status")) {
-    // @todo: log message
-  }
-
-  // Downloading and importing the data
-  // Trying SQL-SYNC-PIPE first
-  if (!drush_shell_exec("cd " . $destination . $site['machine-name'] . " && drush pipe @pantheon." . $site['machine-name'] . "." . $site['env'] . " @self -y --disable=pantheon_apachesolr --ssh-options='" . $site['ssh-options'] . "'")) {
-  }
-  // Using MYSQLDUMP Method if SSP fails
-  else {
-    if (!drush_shell_exec("mysqldump -u" . $site['db-user'] . " -h" . $site['db-host'] ." -P" . $site['db-port'] ." -p" . $site['db-pass'] . " -CceKqQ --add-drop-table --add-locks --create-options --no-autocommit --single-transaction " . $site['db-db'] ." > " . TERMINATUR_TMP_DIR . $site['uuid'] .".sql")) {
-      // @todo: log message
-    }
-    if (!drush_shell_exec("mysql -u" . $db_user . " -p" . $db_pass . " -h" . $db_host . " " . $site['local-db'] . " < " . TERMINATUR_TMP_DIR . $site['uuid'] . ".sql")) {
-      // @todo: log message
-    }
-  }
-  */
-}
-
-/**
- * Downloads a dump of the Pantheon database
- */
-function _terminatur_data_download($site, $destination, $db_user, $db_pass, $db_host) {
-  // Get the download link data
-  if (!$site['database']['download-data'] = _terminatur_get_download_link($site, 'database')) {
-    return;
-  }
-
-  // Parse download data and begin the download
-  $result = $site['database']['download-data'];
-  $data = json_decode($result['json']);
-  $filename = strstr(basename($data->url), '?', '_');
-  $dir = strstr($filename, '.', true);
-  $cache_duration = 86400*365;
-  $path = _drush_download_file($data->url, getenv('HOME') .  DIRECTORY_SEPARATOR . $filename, $cache_duration);
-  if (!$path && !drush_get_context('DRUSH_SIMULATE')) {
-    drush_log(dt("Download failed. You may want to run 'drush ta' to refresh your download links."), 'error');
-  }
-}
-
-/**
- * Gets a valid local MySQL connection string
- */
-function _terminatur_data_get_connect_string($site, $destination, $db_user, $db_pass, $db_host) {
-  // Check to see if code exists
-  if (is_dir($destination . $site['machine-name'])) {
-    // Validate settings file if applicable
-    if (file_exists($destination . $site['machine-name'] . "/sites/default/settings.php")) {
-      _terminatur_validate_settings($site, $destination, $db_user, $db_pass, $db_host);
-    }
-
-    drush_shell_exec("cd " . $destination . $site['machine-name'] . " && drush sql-connect");
-    $results = drush_shell_exec_output();
-    if (isset($results[0])) {
-      $connect = trim($results[0]);
-    }
-  }
-}
-
-/**
- * Downloads or refreshs pantheon files
- * @param  array or string $site an array of the sites info or the uparsed machine argument
- * @return if fails
- */
-function _terminatur_validate_settings($site, $destination, $db_user, $db_pass, $db_host) {
-
+  $get_data_func = '_terminatur_data_' . $site['database']['method'];
+  $get_data_func($site, $destination, $db_user, $db_pass, $db_host, $db_port);
 }
 
 /**
@@ -433,7 +314,315 @@ function drush_terminatur_files($sitename = FALSE) {
   }
 }
 
+/**
+ * Gets the codebase for the Pantheon site with git
+ */
+function _terminatur_code_git($site, $destination) {
+  // Check if the codebase already exists
+  if (file_exists($destination . $site['machine-name'] . "/.git/config")) {
+    drush_shell_exec("cat " . $destination . $site['machine-name'] . "/.git/config | grep url > " . TERMINATUR_TMP_DIR . "gitconfig" . $site['machine-name']);
+    $gitconfig_string = trim(file_get_contents(TERMINATUR_TMP_DIR . "gitconfig" . $site['machine-name']));
+    drush_shell_exec("rm /tmp/gitconfig" . $site['machine-name']);
 
+    // Codebase does exist, just refresh that code
+    if ($gitconfig_string == "url = " . $site['code']['git-connect']) {
+      drush_shell_exec("git --git-dir=" . $destination . $site['machine-name'] . "/.git pull");
+      return;
+    }
+    else {
+      drush_shell_exec("rm -rf " . $destination . $site['machine-name']);
+    }
+  }
+
+  // Git clone for the first time
+  drush_shell_exec("mkdir " . $destination . $site['machine-name'] . " && cd " . $destination . " && git clone " . $site['code']['git-connect'] . " " . $site['machine-name']);
+}
+
+/**
+ * Gets the codebase for the Pantheon site via S3 download
+ */
+function _terminatur_code_download($site, $destination) {
+  // Get the download link data
+  if (!$site['code']['download-data'] = _terminatur_get_download_link($site, 'code')) {
+    return;
+  }
+  // Parse download data and begin the download
+  $result = $site['code']['download-data'];
+  $data = json_decode($result['json']);
+  $filename = strstr(basename($data->url), '?', '_');
+  $dir = strstr($filename, '.', true);
+  $cache_duration = 86400*365;
+  $path = _drush_download_file($data->url, TERMINATUR_TMP_DIR . $filename, $cache_duration);
+  if ($path || drush_get_context('DRUSH_SIMULATE')) {
+    drush_tarball_extract($path, TERMINATUR_TMP_DIR);
+    drush_shell_exec("rm -rf " . $destination . $site['machine-name']);
+    drush_shell_exec("mv " . TERMINATUR_TMP_DIR . $dir . " " . $destination . $site['machine-name']);
+  }
+  else {
+    drush_log(dt("Download failed. You may want to run 'drush ta' to refresh your download links."), 'error');
+  }
+}
+
+/**
+ * Gets the DB either by pipe or download adn then imports into mysql
+ *
+ * Validates and builds settings files it applicable.
+ */
+function _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_host, $db_port) {
+  $databases = array();
+  if (!$databases = _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port)) {
+    drush_log(dt("You have entered incorrect MySQL credentials."), 'error');
+    return;
+  }
+  /*
+  // Unreap my heart: make sure DB server is awake
+  if (!drush_shell_exec("drush @pantheon." . $site['machine-name'] . "." . $site['env'] . " status")) {
+    // @todo: log message
+  }
+
+  // Downloading and importing the data
+  // Trying SQL-SYNC-PIPE first
+  if (!drush_shell_exec("cd " . $destination . $site['machine-name'] . " && drush pipe @pantheon." . $site['machine-name'] . "." . $site['env'] . " @self -y --disable=pantheon_apachesolr --ssh-options='" . $site['ssh-options'] . "'")) {
+  }
+  // Using MYSQLDUMP Method if SSP fails
+  else {
+    if (!drush_shell_exec("mysqldump -u" . $site['db-user'] . " -h" . $site['db-host'] ." -P" . $site['db-port'] ." -p" . $site['db-pass'] . " -CceKqQ --add-drop-table --add-locks --create-options --no-autocommit --single-transaction " . $site['db-db'] ." > " . TERMINATUR_TMP_DIR . $site['uuid'] .".sql")) {
+      // @todo: log message
+    }
+    if (!drush_shell_exec("mysql -u" . $db_user . " -p" . $db_pass . " -h" . $db_host . " " . $site['local-db'] . " < " . TERMINATUR_TMP_DIR . $site['uuid'] . ".sql")) {
+      // @todo: log message
+    }
+  }
+  */
+}
+
+/**
+ * Downloads a dump of the Pantheon database
+ */
+function _terminatur_data_download($site, $destination, $db_user, $db_pass, $db_host, $db_port) {
+  // Get the download link data
+  if (!$site['database']['download-data'] = _terminatur_get_download_link($site, 'database')) {
+    return;
+  }
+  // Parse download data and begin the download
+  $result = $site['database']['download-data'];
+  $data = json_decode($result['json']);
+  $filename = strstr(basename($data->url), '?', '_');
+  $dir = strstr($filename, '.', true);
+  $cache_duration = 86400*365;
+  $path = _drush_download_file($data->url, getenv('HOME') .  DIRECTORY_SEPARATOR . $filename, $cache_duration);
+  if (!$path && !drush_get_context('DRUSH_SIMULATE')) {
+    drush_log(dt("Download failed. You may want to run 'drush ta' to refresh your download links."), 'error');
+  }
+}
+
+/**
+ * Gets a valid local MySQL connection string
+ */
+function _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port) {
+  $db_url = 'mysql://' . $db_user . ':' . $db_pass . '@' . $db_host . ':' . $db_port . '/' . $site['database']['local-db'];
+  // Check to see if code exists
+  if (is_dir($destination . $site['machine-name'])) {
+    // Validate settings file if applicable
+    if (file_exists($destination . $site['machine-name'] . "/sites/default/settings.php")) {
+      $settings_file = $destination . $site['machine-name'] . "/sites/default/settings.php";
+      if (!$databases = _terminatur_validate_settings($settings_file)) {
+        $databases = array();
+        $databases = _terminatur_parse_db_url($db_url, NULL);
+        if (!$databases = _terminatur_build_settings($settings_file, $databases)) {
+          return FALSE;
+        }
+      }
+      return $databases;
+    }
+  }
+  else {
+    return _terminatur_test_db_connection(_terminatur_parse_db_url($db_url, NULL));
+  }
+}
+
+/**
+ * Validates the settings file
+ */
+function _terminatur_validate_settings($settings_file) {
+  // Check for the terminatur signature
+  $settings = file_get_contents($settings_file);
+  if (strpos($settings, TERMINATUR_VALIDATION_STRING) !== false) {
+    // Settings have been touched by the terminatur before
+    // But let's verify they still work
+    $databases = array();
+    // Get Drupal 6 stuff
+    if (strpos($settings, "db_url") !== false) {
+      $drupal_6 = true;
+      $db_url = '';
+      $db_prefix = '';
+    }
+    // Load settings file
+    require $settings_file;
+    // Parse drupal 6
+    if ($drupal_6) {
+      $databases = _terminatur_parse_db_url($db_url, $db_prefix);
+    }
+    // Return false if there are no DB settings to be found
+    if (!isset($databases)) {
+      return FALSE;
+    }
+    return _terminatur_test_db_connection($databases);
+  }
+  return FALSE;
+}
+
+/**
+ * Append local settings to a drupal settings file
+ */
+function _terminatur_build_settings($settings_file, $databases) {
+  if (!_terminatur_test_db_connection($databases)) {
+    return FALSE;
+  }
+  // Determine drupal version
+  $settings = file_get_contents($settings_file);
+  $drupal_version = '7';
+  if (strpos($settings, "db_url") !== false) {
+    $drupal_version = '6';
+  }
+
+  $build_settings_func = '_terminatur_build_' . $drupal_version . '_settings';
+  $settings_file = $build_settings_func($settings_file, $databases);
+
+  return _terminatur_validate_settings($settings_file);
+}
+
+/**
+ * Helper file to append Drupal 6 style settings
+ */
+function _terminatur_build_6_settings($settings_file, $databases) {
+  // Open this way so we can append
+  $fh = fopen($settings_file, 'a') or die("can't open file");
+  $conditional = "if (!isset(\$_SERVER['PANTHEON_ENVIRONMENT'])) { \n";
+  if (isset($_SERVER['KALABOX']) && $_SERVER['KALABOX'] === 'on') {
+    $conditional = "if (isset(\$_SERVER['KALABOX']) &&  \$_SERVER['KALABOX'] === 'on') { \n";
+  }
+
+  // Build the DB string
+  $db_url = $databases['default']['default']['driver'] . '://' . $databases['default']['default']['username'] . ':' . $databases['default']['default']['password'] . '@' . $databases['default']['default']['host']. ':' . $databases['default']['default']['port'] . '/' . $databases['default']['default']['database'];
+
+  // Generate the output
+  $output .= "\n";
+  $output .= "/** \n";
+  $output .= " * " . TERMINATUR_VALIDATION_STRING . " \n";
+  $output .= " * \n";
+  $output .= " * These local settings were generated by terminatur. \n";
+  $output .= " * You may see them if you use Kalastack, Kalabox, Proviso or other local dev tools. \n";
+  $output .= " * \n";
+  $output .= " */ \n";
+  $output .=  $conditional;
+  $output .= "  // DB String \n";
+  $output .= "  \$db_url = '" . $db_url .  "';\n";
+  $output .= "}\n";
+  $output .= "\n";
+
+  $settings = $output;
+  fwrite($fh, $settings);
+  fclose($fh);
+
+  return $settings_file;
+}
+
+/**
+ * Helper file to append Drupal 7 style settings
+ */
+function _terminatur_build_7_settings($settings_file, $databases) {
+  // Open this way so we can append
+  $fh = fopen($settings_file, 'a') or die("can't open file");
+  $conditional = "if (!isset(\$_SERVER['PANTHEON_ENVIRONMENT'])) { \n";
+  if (isset($_SERVER['KALABOX']) && $_SERVER['KALABOX'] === 'on') {
+    $conditional = "if (isset(\$_SERVER['KALABOX']) &&  \$_SERVER['KALABOX'] === 'on') { \n";
+  }
+
+  // Generate the output
+  $output .= "\n";
+  $output .= "/** \n";
+  $output .= " * " . TERMINATUR_VALIDATION_STRING . " \n";
+  $output .= " * \n";
+  $output .= " * These local settings were generated by terminatur. \n";
+  $output .= " * You may see them if you use Kalastack, Kalabox, Proviso or other local dev tools. \n";
+  $output .= " * \n";
+  $output .= " */ \n";
+  $output .=  $conditional;
+  $output .= "  // DB Array and some common conf \n";
+  $output .= "  \$databases['default']['default'] = array( \n";
+  $output .= "    'driver' => '" . $databases['default']['default']['driver'] . "',\n";
+  $output .= "    'database' => '" . $databases['default']['default']['database'] . "', \n";
+  $output .= "    'username' => '" . $databases['default']['default']['username'] . "',\n";
+  $output .= "    'password' => '" . $databases['default']['default']['password'] . "',\n";
+  $output .= "    'host' => '" . $databases['default']['default']['host'] . "',\n";
+  $output .= "    'port' => '" . $databases['default']['default']['port'] . "',\n";
+  $output .= "    'prefix' => '',\n";
+  $output .= "  );\n";
+  $output .= "\n";
+  $output .= "  // Set some common desirable local vars  \n";
+  $output .= "  \$conf['file_temporary_path'] = '/tmp';\n";
+  $output .= "  \$conf['file_public_path'] = 'sites/default/files';  \n";
+  $output .= "  \$conf['file_private_path'] = 'sites/default/files/private';  \n";
+  $output .= "  \$conf['reroute_email_enable'] = 1;  \n";
+  $output .= "  \$conf['cache'] = 0;  \n";
+  $output .= "  \$conf['css_gzip_compression'] = FALSE;  \n";
+  $output .= "  \$conf['js_gzip_compression'] = FALSE;  \n";
+  $output .= "}\n";
+
+  $settings = $output;
+  fwrite($fh, $settings);
+  fclose($fh);
+
+  return $settings_file;
+}
+
+/**
+ * Parse a D6 db_url into a D7 array
+ *
+ * This is basically update_parse_db_url from
+ * https://api.drupal.org/api/drupal/includes!update.inc/function/update_parse_db_url/7
+ *
+ */
+function _terminatur_parse_db_url($db_url, $db_prefix) {
+  $databases = array();
+  if (!is_array($db_url)) {
+    $db_url = array('default' => $db_url);
+  }
+  foreach ($db_url as $database => $url) {
+    $url = parse_url($url);
+    $databases[$database]['default'] = array(
+      // MySQLi uses the mysql driver.
+      'driver' => $url['scheme'] == 'mysqli' ? 'mysql' : $url['scheme'],
+      // Remove the leading slash to get the database name.
+      'database' => substr(urldecode($url['path']), 1),
+      'username' => urldecode($url['user']),
+      'password' => isset($url['pass']) ? urldecode($url['pass']) : '',
+      'host' => urldecode($url['host']),
+      'port' => isset($url['port']) ? urldecode($url['port']) : '',
+    );
+    if (isset($db_prefix)) {
+      $databases[$database]['default']['prefix'] = $db_prefix;
+    }
+  }
+  return $databases;
+}
+
+/**
+ * Parse a D6 db_url into a D7 array
+ */
+function _terminatur_test_db_connection($databases) {
+  // Make sure the database actually exists
+  $mysqli = new mysqli($databases['default']['default']['host'], $databases['default']['default']['username'], $databases['default']['default']['password'], NULL, (int) $databases['default']['default']['port']);
+  if ($mysqli->connect_error) {
+    return FALSE;
+  }
+  if (!$mysqli->query('CREATE DATABASE IF NOT EXISTS ' . $databases['default']['default']['database'])) {
+    return FALSE;
+  }
+  $mysqli->close();
+  return $databases;
+}
 
 /**
  * Create a new and fully instantiated site or build one that already exist on pantheon
