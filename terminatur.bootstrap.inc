@@ -208,14 +208,14 @@ function _terminatur_code_options(&$aliases) {
   // Check if user has git
   $method = drush_shell_exec('git --version') ? 'git' : 'download';
   foreach ($aliases as $key => $value) {
-    $aliases[$key]['code']['method'] = $method;
+    $aliases[$key]['terminatur']['code']['method'] = $method;
     switch ($method) {
       case 'git':
-        $aliases[$key]['code']['git-connect'] = "ssh://codeserver." . $aliases[$key]['env'] . "." . $aliases[$key]['uuid'] . "@codeserver." . $aliases[$key]['env'] . "." . $aliases[$key]['uuid'] . ".drush.in:2222/~/repository.git";
+        $aliases[$key]['terminatur']['code']['git-connect'] = "ssh://codeserver." . $aliases[$key]['env'] . "." . $aliases[$key]['uuid'] . "@codeserver." . $aliases[$key]['env'] . "." . $aliases[$key]['uuid'] . ".drush.in:2222/~/repository.git";
         break;
       case 'download':
         $bucket = terminus_latest_bucket($aliases[$key]['uuid'], $aliases[$key]['env'], 'code');
-        $aliases[$key]['code']['download-bucket'] = $bucket ? $bucket : 'NONE';
+        $aliases[$key]['terminatur']['code']['download-bucket'] = $bucket ? $bucket : 'NONE';
         break;
     }
   }
@@ -232,21 +232,21 @@ function _terminatur_data_options(&$aliases) {
     $regex = '/^mysql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)$/';
     $matches = array();
     preg_match($regex, $aliases[$key]['db-url'], $matches);
-    $aliases[$key]['database']['db-user'] = $matches[1];
-    $aliases[$key]['database']['db-pass'] = $matches[2];
-    $aliases[$key]['database']['db-host'] = $matches[3];
-    $aliases[$key]['database']['db-port'] = $matches[4];
-    $aliases[$key]['database']['db-db'] = $matches[5];
-    $aliases[$key]['database']['local-db'] = str_replace("-", "_", $aliases[$key]['machine-name'] . "_local");
+    $aliases[$key]['terminatur']['database']['db-user'] = $matches[1];
+    $aliases[$key]['terminatur']['database']['db-pass'] = $matches[2];
+    $aliases[$key]['terminatur']['database']['db-host'] = $matches[3];
+    $aliases[$key]['terminatur']['database']['db-port'] = $matches[4];
+    $aliases[$key]['terminatur']['database']['db-db'] = $matches[5];
+    $aliases[$key]['terminatur']['database']['local-db'] = str_replace("-", "_", $aliases[$key]['machine-name'] . "_local");
 
-    $aliases[$key]['database']['method'] = $method;
+    $aliases[$key]['terminatur']['database']['method'] = $method;
     switch ($method) {
       case 'mysql':
 
         break;
       case 'download':
         $bucket = terminus_latest_bucket($aliases[$key]['uuid'], $aliases[$key]['env'], 'database');
-        $aliases[$key]['database']['download-bucket'] = $bucket ? $bucket : 'NONE';
+        $aliases[$key]['terminatur']['database']['download-bucket'] = $bucket ? $bucket : 'NONE';
         break;
     }
   }

@@ -50,11 +50,11 @@ function _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_hos
  */
 function _terminatur_data_download($site, $destination, $db_user, $db_pass, $db_host, $db_port, $pipe = FALSE) {
   // Get the download link data
-  if (!$site['database']['download-data'] = _terminatur_get_download_link($site, 'database')) {
+  if (!$site['terminatur']['database']['download-data'] = _terminatur_get_download_link($site, 'database')) {
     return;
   }
   // Parse download data and begin the download
-  $result = $site['database']['download-data'];
+  $result = $site['terminatur']['database']['download-data'];
   $data = json_decode($result['json']);
   $filename = strstr(basename($data->url), '?', '_');
   $dir = strstr($filename, '.', true);

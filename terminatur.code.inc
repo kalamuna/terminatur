@@ -16,7 +16,7 @@ function _terminatur_code_git($site, $destination) {
     drush_shell_exec("rm /tmp/gitconfig" . $site['machine-name']);
 
     // Codebase does exist, just refresh that code
-    if ($gitconfig_string == "url = " . $site['code']['git-connect']) {
+    if ($gitconfig_string == "url = " . $site['terminatur']['code']['git-connect']) {
       drush_shell_exec("git --git-dir=" . $destination . $site['machine-name'] . "/.git pull");
       return;
     }
@@ -33,11 +33,11 @@ function _terminatur_code_git($site, $destination) {
  */
 function _terminatur_code_download($site, $destination) {
   // Get the download link data
-  if (!$site['code']['download-data'] = _terminatur_get_download_link($site, 'code')) {
+  if (!$site['terminatur']['code']['download-data'] = _terminatur_get_download_link($site, 'code')) {
     return;
   }
   // Parse download data and begin the download
-  $result = $site['code']['download-data'];
+  $result = $site['terminatur']['code']['download-data'];
   $data = json_decode($result['json']);
   $filename = strstr(basename($data->url), '?', '_');
   $dir = strstr($filename, '.', true);

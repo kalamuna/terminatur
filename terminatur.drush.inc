@@ -228,7 +228,7 @@ function drush_terminatur_code($sitename = FALSE) {
   drush_log(dt("Downloading code..."), 'warning');
 
   // Build code callback function
-  $get_code_func = '_terminatur_code_' . $site['code']['method'];
+  $get_code_func = '_terminatur_code_' . $site['terminatur']['code']['method'];
   $get_code_func($site, $destination);
 }
 
