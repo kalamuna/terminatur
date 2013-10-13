@@ -18,9 +18,12 @@ function _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_hos
   }
 
   if ($pipe) {
+    if (!$local_site = _terminatur_aliases_get_local_site($site['machine-name'])) {
+      drush_log(dt("You need to have a local site set up to use pipe."), 'error');
+      return;
+    }
     // Unreap my heart: make sure DB server is awake
     drush_invoke_process("@pantheon." .$site['machine-name'] . "." . $site['env'], 'core-status', array(), array());
-
   }
 
   /*
@@ -77,6 +80,9 @@ function _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, 
           return FALSE;
         }
       }
+      // This means we should have a legit settings file with legit db creds
+      // Let's build a local alias for it
+      _terminatur_aliases_add_alias($site, $destination);
       return $databases;
     }
   }
@@ -119,7 +125,7 @@ function _terminatur_data_parse_db_url($db_url, $db_prefix) {
 /**
  * Parse a D6 db_url into a D7 array
  */
-function _terminatur_data_test_db_connection($databases) {
+function _terminatur_data_test_db_connection(&$databases) {
   // Make sure the database actually exists
   $mysqli = new mysqli($databases['default']['default']['host'], $databases['default']['default']['username'], $databases['default']['default']['password'], NULL, (int) $databases['default']['default']['port']);
   if ($mysqli->connect_error) {

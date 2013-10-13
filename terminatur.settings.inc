@@ -42,7 +42,7 @@ function _terminatur_settings_validate($settings_file) {
 /**
  * Append local settings to a drupal settings file
  */
-function _terminatur_settings_build($settings_file, $databases) {
+function _terminatur_settings_build($settings_file, &$databases) {
   if (!_terminatur_data_test_db_connection($databases)) {
     return FALSE;
   }
@@ -62,11 +62,11 @@ function _terminatur_settings_build($settings_file, $databases) {
 /**
  * Helper file to append Drupal 6 style settings
  */
-function _terminatur_settings_build_6($settings_file, $databases) {
+function _terminatur_settings_build_6($settings_file, &$databases) {
   // Open this way so we can append
   $fh = fopen($settings_file, 'a') or die("can't open file");
   $conditional = "if (!isset(\$_SERVER['PANTHEON_ENVIRONMENT'])) { \n";
-  if (isset($_SERVER['KALABOX']) && $_SERVER['KALABOX'] === 'on') {
+  if (KALABOX === TRUE) {
     $conditional = "if (isset(\$_SERVER['KALABOX']) &&  \$_SERVER['KALABOX'] === 'on') { \n";
   }
 
@@ -98,11 +98,11 @@ function _terminatur_settings_build_6($settings_file, $databases) {
 /**
  * Helper file to append Drupal 7 style settings
  */
-function _terminatur_settings_build_7($settings_file, $databases) {
+function _terminatur_settings_build_7($settings_file, &$databases) {
   // Open this way so we can append
   $fh = fopen($settings_file, 'a') or die("can't open file");
   $conditional = "if (!isset(\$_SERVER['PANTHEON_ENVIRONMENT'])) { \n";
-  if (isset($_SERVER['KALABOX']) && $_SERVER['KALABOX'] === 'on') {
+  if (KALABOX === TRUE) {
     $conditional = "if (isset(\$_SERVER['KALABOX']) &&  \$_SERVER['KALABOX'] === 'on') { \n";
   }
 

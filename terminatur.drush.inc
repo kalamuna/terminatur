@@ -24,6 +24,7 @@ include_once('terminatur.aliases.inc');
 if (isset($_SERVER['KALABOX']) && $_SERVER['KALABOX'] === 'on') {
   include_once('terminatur.log.inc');
   include_once('terminatur.kalastack.inc');
+  define('KALABOX', TRUE);
 }
 
 /**

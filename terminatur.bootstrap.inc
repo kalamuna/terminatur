@@ -4,8 +4,9 @@
  * Initialization functionality and Pantheon API integration.
  */
 
+// Constants
 define('TERMINATUR_SSH_KEY', 'terminatur.id_rsa');
-define('ALIASES_FILE', '/etc/drush/pantheon.aliases.drushrc.php'); // @todo: might want to get this location in an OS agnostic way?
+define('TERMINATUR_PANTHEON_ALIASES_FILE', '/etc/drush/pantheon.aliases.drushrc.php');
 
 /**
  * Ensures user has set up SSH and has downloaded their Pantheon aliases file.
@@ -33,12 +34,12 @@ function terminatur_bootstrap($force_refresh = FALSE) {
   // Download and parse the aliases file if it's not there.
   // @todo: might want to do some sort of validation here first?
   $aliases = array();
-  if (!file_exists(ALIASES_FILE) || $force_refresh === TRUE) {
+  if (!file_exists(TERMINATUR_PANTHEON_ALIASES_FILE) || $force_refresh === TRUE) {
     _terminatur_download_aliases();
     $aliases = _terminatur_parse_aliases();
   }
   else {
-    require ALIASES_FILE;
+    require TERMINATUR_PANTHEON_ALIASES_FILE;
   }
 
   // @todo Validate the pantheon aliases file.
