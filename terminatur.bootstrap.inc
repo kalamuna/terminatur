@@ -283,13 +283,19 @@ function _terminatur_write_aliases(&$aliases) {
   foreach ($aliases as $site) {
     $output .= "\$aliases['" . $site['machine-name'] . "." . $site['env'] . "'] = array(\n";
     foreach ($site as $key => $value) {
-      $output .= is_array($value) ? _terminatur_write_next_level($key, $value, $indent) : $indent . "'" . $key . "' => '" . $value . "',\n";
+      // This needs to be TRUE, not 1
+      if ($key == 'db-allows-remote') {
+        $output .= $indent . "'" . $key . "' => TRUE,\n";
+      }
+      else {
+        $output .= is_array($value) ? _terminatur_write_next_level($key, $value, $indent) : $indent . "'" . $key . "' => '" . $value . "',\n";
+      }
     }
     $output .= ");\n";
   }
 
   // Write file
-  file_put_contents(ALIASES_FILE, $output);
+  file_put_contents(TERMINATUR_PANTHEON_ALIASES_FILE, $output);
 }
 
 /**

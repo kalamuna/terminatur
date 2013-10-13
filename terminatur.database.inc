@@ -23,7 +23,9 @@ function _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_hos
       return;
     }
     // Unreap my heart: make sure DB server is awake
-    drush_invoke_process("@pantheon." .$site['machine-name'] . "." . $site['env'], 'core-status', array(), array());
+    drush_invoke_process("@pantheon." . $site['machine-name'] . "." . $site['env'], 'core-status', array(), array());
+    drush_invoke_process('@local.cvt.kala', 'sql-sync-pipe', array('@pantheon.cvt.dev', '@local.cvt.kala'), array('disable' => 'pantheon_apachesolr', 'ssh-options' => $site['ssh-options'], 'y'));
+    //drush_invoke_process('@self', 'pantheon-aliases', array(), array('destination' => TERMINATUR_TMP_DIR . 'terminatur.aliases.tmp'));
   }
 
   /*
