@@ -5,13 +5,6 @@
  */
 
 // Constants
-// Only use this directory if exists and is writeable otherwise use home
-if (is_dir("/etc/drush") && is_writable("/etc/drush")) {
-  define('TERMINATUR_DRUSH_DIR', '/etc/drush/');
-}
-else {
-  define('TERMINATUR_DRUSH_DIR', getenv('HOME') . DIRECTORY_SEPARATOR . '.drush' . DIRECTORY_SEPARATOR);
-}
 define('TERMINATUR_SSH_KEY', 'terminatur.id_rsa');
 define('TERMINATUR_PANTHEON_ALIASES_FILE', TERMINATUR_DRUSH_DIR . 'pantheon.aliases.drushrc.php');
 define('TERMINATUR_LOCAL_ALIASES_FILE', TERMINATUR_DRUSH_DIR . 'local.aliases.drushrc.php');

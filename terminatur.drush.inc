@@ -6,34 +6,21 @@
 
 // Constants
 define('TERMINATUR_TMP_DIR', sys_get_temp_dir() . "/");
-define('TERMINATUR_DEFAULT_WEBROOT', '/var/www/');
-define('TERMINATUR_DEFAULT_DB_USER', 'root');
-define('TERMINATUR_DEFAULT_DB_PASS', 'password');
-define('TERMINATUR_DEFAULT_DB_HOST', 'localhost');
-define('TERMINATUR_DEFAULT_DB_PORT', '3306');
+define('TERMINATUR_ENV', _terminatur_get_environment());
 
-// Load up core stuff
+// Load up environment dependent stuff. Right now this is basiaclly just for
+// kalastack/kalabox
+// @todo: Eventually we will want to provide some basic handling for
+// MAMP/Meglodon/etc
+include_once('environment/terminatur.' . TERMINATUR_ENV . '.inc');
+
+// Now that we have an environment load up other core stuff
 include_once('terminatur.bootstrap.inc');
 include_once('terminatur.code.inc');
 include_once('terminatur.database.inc');
 include_once('terminatur.files.inc');
 include_once('terminatur.settings.inc');
 include_once('terminatur.aliases.inc');
-
-// If used in conjunction with KALABOX/KALASTACK load some other things
-// @todo: Eventually we will want to provide some basic handling for
-// most webserver/hosts files.
-if (isset($_SERVER['KALABOX']) && $_SERVER['KALABOX'] === 'on') {
-  include_once('terminatur.log.inc');
-  include_once('terminatur.kalastack.inc');
-  define('KALABOX', TRUE);
-}
-if (KALABOX) {
-  define('TERMINATUR_LOCAL_SUFFIX', '.kala');
-}
-else {
-  define('TERMINATUR_LOCAL_SUFFIX', '.local');
-}
 
 /**
  * Implementation of hook_drush_command().
@@ -475,3 +462,23 @@ function drush_terminatur_newsite() {
 function drush_terminatur_aliases() {
   return terminatur_bootstrap(TRUE);
 }
+
+/**
+ * Determine what environmental file to load
+ */
+function _terminatur_get_environment() {
+  // Check for Kalastack
+  if (isset($_SERVER['KALABOX']) && $_SERVER['KALABOX'] === 'on') {
+    define('KALABOX', TRUE);
+    return 'kalastack';
+  }
+  // elseif @todo some check for mamp
+  // elseif @todo some check for meglodon
+  // elseif @todo some check for devstack
+  // elseif @todo some check for drupalpro
+  else {
+    return 'default';
+  }
+}
+
+
