@@ -344,8 +344,6 @@ function drush_terminatur_pullsite($sitename = FALSE) {
   $pipe = drush_get_option('pipe');
   $files = drush_get_option('files');
 
-  drush_log(dt("Downloading site..."), 'warning');
-
   // Set command arguments
   $command_args = array($site['machine-name'] . "." . $site['env']);
 
