@@ -39,12 +39,6 @@ function terminatur_drush_command() {
     'examples' => array(
       'drush pullcode mysite.dev' => 'Pulls down the code for the site at @pantheon.mysite.dev.',
     ),
-    'options' => array(
-      'destination' => array(
-        'description' => 'The destination of your webroot.',
-        'example-value' => '/var/www/',
-      ),
-    ),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
 
@@ -55,10 +49,6 @@ function terminatur_drush_command() {
       'drush pulldata sitename.dev' => 'Pulls down the database for a site at @pantheon.mysite.dev.',
     ),
     'options' => array(
-      'destination' => array(
-        'description' => 'The destination of your webroot.',
-        'example-value' => '/var/www/',
-      ),
       'user' => array(
         'description' => 'A MySQL user with creds to create DBz.',
         'example-value' => 'root',
@@ -85,12 +75,6 @@ function terminatur_drush_command() {
   $items['terminatur-files'] = array(
     'description' => dt('Pulls down the files for a Pantheon site.'),
     'aliases' => array('pullfiles', 'pf'),
-    'options' => array(
-      'destination' => array(
-        'description' => 'The destination of your webroot.',
-        'example-value' => '/var/www/',
-      ),
-    ),
     'examples' => array(
       'drush pullfiles sitename.dev' => 'Pulls down the files for a site at @pantheon.mysite.dev.',
     ),
@@ -105,10 +89,6 @@ function terminatur_drush_command() {
       'drush pullsite sitename.dev --files' => 'Pulls down the code, data and files for a site at @pantheon.mysite.dev. Sets up server side conf on Kalabox.',
     ),
     'options' => array(
-      'destination' => array(
-        'description' => 'The destination of your webroot.',
-        'example-value' => '/var/www/',
-      ),
       'user' => array(
         'description' => 'A MySQL user with creds to create DBz.',
         'example-value' => 'root',
@@ -134,7 +114,6 @@ function terminatur_drush_command() {
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
-
   $items['terminatur-crushsite'] = array(
     'description' => dt('Removes a site completely.'),
     'aliases' => array('crushsite', 'crush', 'wmd', 'cs'),
@@ -143,20 +122,6 @@ function terminatur_drush_command() {
      ),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
-
-  // Include standard arguments for above commands
-  $common_args = array(
-    'sitename' => 'The sitename.dev part of @pantheon.sitename.dev.',
-  );
-  foreach ($items as $key => $array) {
-    if (isset($array['arguments'])) {
-      $items[$key]['arguments'] = array_merge($items[$key]['arguments'], $common_args);
-    }
-    else {
-      $items[$key]['arguments'] = $common_args;
-    }
-  }
-
   $items['terminatur-newsite'] = array(
     'description' => dt('Builds a new site locally.'),
     'aliases' => array('newsite', 'ns'),
@@ -177,6 +142,31 @@ function terminatur_drush_command() {
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
+
+  // Include standard arguments for above commands
+  $common_args = array(
+    'sitename' => 'The sitename.dev part of @pantheon.sitename.dev.',
+  );
+  $common_options = array(
+    'destination' => array(
+      'description' => 'The destination of your webroot.',
+      'example-value' => '/var/www/',
+    ),
+  );
+  foreach ($items as $key => $array) {
+    if (isset($array['arguments'])) {
+      $items[$key]['arguments'] = array_merge($items[$key]['arguments'], $common_args);
+    }
+    else {
+      $items[$key]['arguments'] = $common_args;
+    }
+    if (isset($array['options'])) {
+      $items[$key]['options'] = array_merge($items[$key]['options'], $common_options);
+    }
+    else {
+      $items[$key]['options'] = $common_options;
+    }
+  }
 
   $items['terminatur-aliases'] = array(
     'description' => dt('Grabs your Pantheon aliases and parses them for use with terminatur.'),
@@ -383,11 +373,16 @@ function drush_terminatur_pullsite($sitename = FALSE) {
  * Obliterate a local site
  */
 function drush_terminatur_crushsite($sitename = FALSE) {
+  // Grabs info about the site
   if (!$sitename) {
     $sitename = drush_get_option('sitename');
   }
   $sites = terminatur_bootstrap();
   $site = $sites[$sitename];
+  if (!$site) {
+    drush_log(dt("Not a valid Pantheon site."), 'error');
+    return;
+  }
 
   // If that site actually exists...
   if (isset($site['site'])) {
