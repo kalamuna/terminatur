@@ -21,45 +21,46 @@ define('TERMINATUR_DEFAULT_DB_PORT', '3306');
 define('TERMINATUR_DEFAULT_DEFAULT_DIR', '/sites/default/');
 define('TERMINATUR_DEFAULT_FILES_DIR', 'files');
 
+define('TERMINATUR_VHOST_AVAIL_DIR', '/etc/kalastack/vhosts/sites-available/');
+define('TERMINATUR_VHOST_ENABLED_DIR', '/etc/kalastack/vhosts/sites-enabled/');
+define('TERMINATUR_VHOST_RESTART', 'sudo service nginx restart');
+
 // Set our own log printing function:
 drush_set_context('DRUSH_LOG_CALLBACK', 'terminatur_print_log');
 
 /**
  * Creates a vhost for a newly built or created site
  */
-function terminuatur_vhost() {
+function _terminatur_vhost_add_kalastack($site, $destination) {
   // Get the site machine name and parse it correctly
-  $args = drush_get_arguments();
-  $siteal = explode('.', $args[1]);
-  $sitename = $siteal[0];
-
   // Create a vhost if it doesnt already exit
-  if (!file_exists("/etc/kalastack/vhosts/sites-available/" . $sitename)) {
+  if (!file_exists(TERMINATUR_VHOST_AVAIL_DIR . $site['machine-name'])) {
     // Make sure a site is actually where it is supposed to be
-    if (is_dir("/var/www/" . $sitename)) {
-      drush_shell_exec("cp /etc/nginx/sites-available/drupaldefault /tmp/" . $sitename);
-      $vhost_default_string = kala_get_file("/tmp/" . $sitename);
+    if (is_dir($destination . $sitename['machine-name'])) {
+      // Grab a template
+      copy("/etc/nginx/sites-available/drupaldefault", TERMINATUR_TMP_DIR . $site['machine-name']);
+      $vhost_default_string = file_get_contents(TERMINATUR_TMP_DIR . $site['machine-name']);
 
-      //  Load up default drupal vhost and update with new site info
+      // Load up default drupal vhost and update with new site info
       $search = array("drupal.kala", "/var/www/drupal", "# THIS IS MEANT TO BE USED FOR BUILDING OTHER DRUPAL VHOSTS");
-      $replace = array($sitename . ".kala", "/var/www/" . $sitename, "");
+      $replace = array($site['machine-name'] . TERMINATUR_LOCAL_SUFFIX, $destination . $site['machine-name'], "");
       $vhost_default_string = str_replace($search, $replace, $vhost_default_string);
 
       // Write the file and symlink it to sites-enabled
-      kala_write_file("/tmp/" . $sitename, $vhost_default_string);
-      drush_shell_exec ("cp /tmp/" . $sitename . " /etc/kalastack/vhosts/sites-available/" . $sitename);
-      drush_shell_exec ("ln -s /etc/kalastack/vhosts/sites-available/" . $sitename . " /etc/kalastack/vhosts/sites-enabled/" . $sitename);
+      file_put_contents(TERMINATUR_TMP_DIR . $site['machine-name'], $vhost_default_string);
+      copy(TERMINATUR_TMP_DIR . $site['machine-name'], TERMINATUR_VHOST_AVAIL_DIR . $site['machine-name']);
+      symlink(TERMINATUR_VHOST_AVAIL_DIR . $site['machine-name'], TERMINATUR_VHOST_ENABLED_DIR . $site['machine-name']);
 
       // Restart nginx so the site actually is active
-      drush_shell_exec ("service nginx restart");
-      kala_update_etc_hosts($sitename . ".kala");
-      drush_log('New vhost created!', 'success');
+      drush_shell_exec(TERMINATUR_VHOST_RESTART);
     }
   }
-  else {
-    // File already exists!
-    drush_log('Seriously, the vhost file already exists!', 'warning');
-  }
+}
+
+/**
+ * Removes a vhost for a newly built or created site
+ */
+function _terminatur_vhost_remove_kalastack($site, $destination) {
 }
 
 /**

@@ -294,7 +294,7 @@ function drush_terminatur_files($sitename = FALSE) {
 
   drush_log(dt("Downloading files..."), 'warning');
 
-  // Build data callback function
+  // Build files callback function
   $get_files_func = '_terminatur_files_' . $site['terminatur']['files']['method'];
   $get_files_func($site, $destination);
 }
@@ -355,7 +355,7 @@ function drush_terminatur_pullsite($sitename = FALSE) {
     'password' => $db_pass,
     'host' => $db_host,
     'port' => $db_port,
-    'pipe',
+    'pipe' => $pipe,
   );
   drush_invoke_process('', 'terminatur-data', $command_args, $data_options);
 
@@ -364,12 +364,15 @@ function drush_terminatur_pullsite($sitename = FALSE) {
     drush_invoke_process('', 'terminatur-files', $command_args, array('destination' => $destination));
   }
 
-  // Vhost and cleanupz
-  //drush_shell_exec("sudo drush vhost " . $args[1]);
-  //drush_shell_exec("cd /var/www/" . $site['site'] . " && drush cc all -y");
-  //drush_log('Drush: We clear yo cache', 'success');
-  //_kala_add_alias($site);
-  //drush_log('Success: ' . $site['site-name'] .   ' has been built!', 'success');
+  // Build vhost callback function
+  $get_vhost_func = '_terminatur_vhost_add_' . TERMINATUR_ENV;
+  $get_vhost_func($site, $destination);
+
+  // Clear cache
+  drush_invoke_process('@' . TERMINATUR_LOCAL_PREFIX . '.' . $site['machine-name'] . TERMINATUR_LOCAL_SUFFIX, 'cache-clear', array('all'), array('y'));
+
+  // Finish
+  drush_log('Site built!', 'success');
 }
 
 /**
