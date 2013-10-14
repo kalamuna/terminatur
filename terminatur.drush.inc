@@ -364,9 +364,13 @@ function drush_terminatur_pullsite($sitename = FALSE) {
     drush_invoke_process('', 'terminatur-files', $command_args, array('destination' => $destination));
   }
 
-  // Build vhost callback function
-  $get_vhost_func = '_terminatur_vhost_add_' . TERMINATUR_ENV;
-  $get_vhost_func($site, $destination);
+  // Build vhost add callback function
+  $get_vhost_add_func = '_terminatur_vhost_add_' . TERMINATUR_ENV;
+  $get_vhost_add_func($site, $destination);
+
+  // Build host add callback function
+  $get_host_add_func = '_terminatur_host_add_' . TERMINATUR_ENV;
+  $get_host_add_func($site['machine-name'] . TERMINATUR_LOCAL_SUFFIX);
 
   // Clear cache
   drush_invoke_process('@' . TERMINATUR_LOCAL_PREFIX . '.' . $site['machine-name'] . TERMINATUR_LOCAL_SUFFIX, 'cache-clear', array('all'), array('y'));

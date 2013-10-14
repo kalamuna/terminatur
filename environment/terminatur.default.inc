@@ -23,6 +23,7 @@ define('TERMINATUR_DEFAULT_FILES_DIR', 'files');
 
 define('TERMINATUR_VHOST_AVAIL_DIR', 'SOMETHING?');
 define('TERMINATUR_VHOST_AVAIL_DIR', 'SOMETHING ELSE?');
+define('TERMINATUR_HOSTS_FILE', '/etc/hosts');
 
 /**
  * Creates a vhost for a newly built or created site
@@ -37,3 +38,17 @@ function _terminatur_vhost_add_default($site, $destination) {
 function _terminatur_vhost_remove_default($site, $destination) {
   //@todo: need some sort of default implementation here
 }
+
+/**
+ * Creates an entry for the hosts file
+ */
+function _terminatur_host_add_default($hostname) {
+  //@todo: need some sort of default implementation here
+}
+
+/**
+ * Remove hostname from hosts file
+ */
+function _terminatur_host_remove_default($hostname) {
+  //@todo: need some sort of default implementation here
+  }

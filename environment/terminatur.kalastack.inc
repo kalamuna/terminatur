@@ -24,6 +24,7 @@ define('TERMINATUR_DEFAULT_FILES_DIR', 'files');
 define('TERMINATUR_VHOST_AVAIL_DIR', '/etc/kalastack/vhosts/sites-available/');
 define('TERMINATUR_VHOST_ENABLED_DIR', '/etc/kalastack/vhosts/sites-enabled/');
 define('TERMINATUR_VHOST_RESTART', 'sudo service nginx restart');
+define('TERMINATUR_HOSTS_FILE', '/etc/hosts');
 
 // Set our own log printing function:
 drush_set_context('DRUSH_LOG_CALLBACK', 'terminatur_print_log');
@@ -61,6 +62,31 @@ function _terminatur_vhost_add_kalastack($site, $destination) {
  * Removes a vhost for a newly built or created site
  */
 function _terminatur_vhost_remove_kalastack($site, $destination) {
+}
+
+/**
+ * Creates an entry for the hosts file
+ */
+function _terminatur_host_add_kalastack($hostname) {
+  $hosts_file_str = file_get_contents(TERMINATUR_HOSTS_FILE);
+  $new_host = "127.0.0.1\t$hostname\n";
+  if (!strstr($hosts_file_str, $new_host)) {
+    $new_hosts_file_str =  $new_host . $hosts_file_str;
+    file_put_contents(TERMINATUR_TMP_DIR . "hosts", $new_hosts_file_str);
+    // Doing it this way because we need sudo
+    drush_shell_exec("sudo cp -f " . TERMINATUR_TMP_DIR . "hosts " . TERMINATUR_HOSTS_FILE);
+    unlink(TERMINATUR_TMP_DIR . "hosts");
+  }
+}
+
+/**
+ * Remove hostname from hosts file
+ */
+function _terminatur_host_remove_kalastack($hostname) {
+  // @todo make this less ghetto
+  drush_shell_exec("sed /" . $hostname . "/d " . TERMINATUR_HOSTS_FILE . " > " . TERMINATUR_TMP_DIR . "hosts");
+  drush_shell_exec("sudo cp -f /tmp/hosts /etc/hosts");
+  unlink(TERMINATUR_TMP_DIR . "hosts");
 }
 
 /**
