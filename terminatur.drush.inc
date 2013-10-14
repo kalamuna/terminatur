@@ -167,7 +167,7 @@ function terminatur_drush_command() {
     'description' => dt('Grabs your Pantheon aliases and parses them for use with terminatur.'),
     'aliases' => array('talias', 'ta'),
     'examples' => array(
-      'drush talias arnold@terminatur.com --password=illbeback' => 'Deletes the Pantheon site. Must use a sitename alias (format "sitename.dev") derived from a valid Pantheon alias as first argument.',
+      'drush talias arnold@terminatur.com ' => 'Grabs your Pantheon aliases and Terminates them.',
      ),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );

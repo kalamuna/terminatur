@@ -10,7 +10,7 @@ define('TERMINATUR_LOCAL_SUFFIX', '.kala');
 define('TERMINATUR_LOCAL_PREFIX', 'kalastack');
 define('TERMINATUR_DB_SUFFIX', '_kala');
 define('TERMINATUR_DRUSH_DIR', '/etc/drush/');
-define('TERMINATUR_LOCAL_ALIASES_FILE', TERMINATUR_DRUSH_DIR . 'kalastack.aliases.drushrc.php');
+define('TERMINATUR_LOCAL_ALIASES_FILE', TERMINATUR_DRUSH_DIR . TERMINATUR_LOCAL_PREFIX . '.aliases.drushrc.php');
 
 define('TERMINATUR_DEFAULT_WEBROOT', '/var/www/');
 define('TERMINATUR_DEFAULT_DB_USER', 'root');
