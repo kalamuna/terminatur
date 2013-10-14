@@ -33,6 +33,26 @@ include_once('terminatur.aliases.inc');
 function terminatur_drush_command() {
   $items = array();
 
+  // Some generic options needed for DB based commands
+  $db_options = array(
+    'user' => array(
+      'description' => 'A MySQL user with creds to create DBz.',
+      'example-value' => 'root',
+    ),
+    'password' => array(
+      'description' => 'The password for the MySQL user.',
+      'example-value' => 'password',
+    ),
+    'host' => array(
+      'description' => 'The host of the MySQL server.',
+      'example-value' => 'localhost',
+    ),
+    'port' => array(
+      'description' => 'The port of the MySQL server.',
+      'example-value' => '3306',
+    ),
+  );
+
   $items['terminatur-code'] = array(
     'description' => dt('Pulls down the code for a Pantheon site.'),
     'aliases' => array('pullcode', 'pc'),
@@ -49,28 +69,13 @@ function terminatur_drush_command() {
       'drush pulldata sitename.dev' => 'Pulls down the database for a site at @pantheon.mysite.dev.',
     ),
     'options' => array(
-      'user' => array(
-        'description' => 'A MySQL user with creds to create DBz.',
-        'example-value' => 'root',
-      ),
-      'password' => array(
-        'description' => 'The password for the MySQL user.',
-        'example-value' => 'password',
-      ),
-      'host' => array(
-        'description' => 'The host of the MySQL server.',
-        'example-value' => 'localhost',
-      ),
-      'port' => array(
-        'description' => 'The port of the MySQL server.',
-        'example-value' => '3306',
-      ),
       'pipe' => array(
         'description' => 'Use a pipe instead of a backup. This is slower but it will grab the most up to date data.',
       ),
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
+  $items['terminatur-data']['options'] += $db_options;
 
   $items['terminatur-files'] = array(
     'description' => dt('Pulls down the files for a Pantheon site.'),
@@ -89,22 +94,6 @@ function terminatur_drush_command() {
       'drush pullsite sitename.dev --files' => 'Pulls down the code, data and files for a site at @pantheon.mysite.dev. Sets up server side conf on Kalabox.',
     ),
     'options' => array(
-      'user' => array(
-        'description' => 'A MySQL user with creds to create DBz.',
-        'example-value' => 'root',
-      ),
-      'password' => array(
-        'description' => 'The password for the MySQL user.',
-        'example-value' => 'password',
-      ),
-      'host' => array(
-        'description' => 'The host of the MySQL server.',
-        'example-value' => 'localhost',
-      ),
-      'port' => array(
-        'description' => 'The port of the MySQL server.',
-        'example-value' => '3306',
-      ),
       'pipe' => array(
         'description' => 'Use a pipe instead of a backup. This is slower but it will grab the most up to date data.',
       ),
@@ -114,32 +103,19 @@ function terminatur_drush_command() {
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
+  $items['terminatur-pullsite']['options'] += $db_options;
+
   $items['terminatur-crushsite'] = array(
     'description' => dt('Removes a site completely.'),
     'aliases' => array('crushsite', 'crush', 'wmd', 'cs'),
     'examples' => array(
       'drush crushsite sitename.dev' => 'Removes a site at @pantheon.mysite.dev or @kalabox.mysite.dev completely.',
      ),
-    'options' => array(
-      'user' => array(
-        'description' => 'A MySQL user with creds to create DBz.',
-        'example-value' => 'root',
-      ),
-      'password' => array(
-        'description' => 'The password for the MySQL user.',
-        'example-value' => 'password',
-      ),
-      'host' => array(
-        'description' => 'The host of the MySQL server.',
-        'example-value' => 'localhost',
-      ),
-      'port' => array(
-        'description' => 'The port of the MySQL server.',
-        'example-value' => '3306',
-      ),
-    ),
+    'options' => array(),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
+  $items['terminatur-crushsite']['options'] += $db_options;
+
   $items['terminatur-newsite'] = array(
     'description' => dt('Builds a new site locally.'),
     'aliases' => array('newsite', 'ns'),
@@ -160,6 +136,7 @@ function terminatur_drush_command() {
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
+  $items['terminatur-newsite']['options'] += $db_options;
 
   // Include standard arguments for above commands
   $common_args = array(
@@ -210,12 +187,7 @@ function drush_terminatur_code($sitename = FALSE) {
   if (!$sitename) {
     $sitename = drush_get_option('sitename');
   }
-  $sites = terminatur_bootstrap();
-  $site = $sites[$sitename];
-    if (!$site) {
-    drush_log(dt("Not a valid Pantheon site."), 'error');
-    return;
-  }
+  $site = _terminatur_get_site($sitename);
 
   // Gets the webroot
   $destination = drush_get_option('destination');
@@ -237,15 +209,11 @@ function drush_terminatur_code($sitename = FALSE) {
  */
 function drush_terminatur_data($sitename = FALSE) {
   // Grabs info about the site
+  // Grabs info about the site
   if (!$sitename) {
     $sitename = drush_get_option('sitename');
   }
-  $sites = terminatur_bootstrap();
-  $site = $sites[$sitename];
-  if (!$site) {
-    drush_log(dt("Not a valid Pantheon site."), 'error');
-    return;
-  }
+  $site = _terminatur_get_site($sitename);
 
   // Gets some options or sets defaults
   $destination = drush_get_option('destination');
@@ -284,15 +252,11 @@ function drush_terminatur_data($sitename = FALSE) {
  */
 function drush_terminatur_files($sitename = FALSE) {
   // Grabs info about the site
+  // Grabs info about the site
   if (!$sitename) {
     $sitename = drush_get_option('sitename');
   }
-  $sites = terminatur_bootstrap();
-  $site = $sites[$sitename];
-  if (!$site) {
-    drush_log(dt("Not a valid Pantheon site."), 'error');
-    return;
-  }
+  $site = _terminatur_get_site($sitename);
 
   // Gets some options or sets defaults
   $destination = drush_get_option('destination');
@@ -316,13 +280,9 @@ function drush_terminatur_pullsite($sitename = FALSE) {
   if (!$sitename) {
     $sitename = drush_get_option('sitename');
   }
-  $sites = terminatur_bootstrap();
-  $site = $sites[$sitename];
-  if (!$site) {
-    drush_log(dt("Not a valid Pantheon site."), 'error');
-    return;
-  }
+  $site = _terminatur_get_site($sitename);
 
+  // Need MySQL
   if ($site['terminatur']['database']['method'] != 'mysql') {
     drush_log(dt("You need at least MySQL for this to work."), 'error');
     return;
@@ -374,7 +334,7 @@ function drush_terminatur_pullsite($sitename = FALSE) {
 
   // Build vhost add callback function
   $get_vhost_add_func = '_terminatur_vhost_add_' . TERMINATUR_ENV;
-  $get_vhost_add_func($site, $destination);
+  $get_vhost_add_func($site['machine-name'], $destination);
 
   // Build host add callback function
   $get_host_add_func = '_terminatur_host_add_' . TERMINATUR_ENV;
@@ -392,17 +352,14 @@ function drush_terminatur_pullsite($sitename = FALSE) {
  */
 function drush_terminatur_crushsite($sitename = FALSE) {
   // Grabs info about the site
+  // Grabs info about the site
   if (!$sitename) {
     $sitename = drush_get_option('sitename');
   }
-  $sites = terminatur_bootstrap();
-  $site = $sites[$sitename];
-  if (!$site) {
-    drush_log(dt("Not a valid Pantheon site."), 'error');
-    return;
-  }
+  $site = _terminatur_get_site($sitename, TRUE);
 
-  if ($site['terminatur']['database']['method'] != 'mysql') {
+  // Do a different check here because a local site does not have a DB method set
+  if (!drush_shell_exec('mysql --version')) {
     drush_log(dt("You need at least MySQL for this to work."), 'error');
     return;
   }
@@ -429,9 +386,12 @@ function drush_terminatur_crushsite($sitename = FALSE) {
     $db_port  = TERMINATUR_DEFAULT_DB_PORT;
   }
 
-  _terminatur_code_remove($site, $destination, $db_user, $db_pass, $db_host, $db_port);
+  drush_log(dt("Removing site..."), 'warning');
+
+  // @todo: to be consistence maybe we want these to be abstracted out a bit?
+  _terminatur_code_remove($site, $destination);
   _terminatur_data_remove($site, $destination, $db_user, $db_pass, $db_host, $db_port);
-  _terminatur_files_remove($site, $destination, $db_user, $db_pass, $db_host, $db_port);
+  _terminatur_files_remove($site, $destination);
 
   // Build vhost remove callback function
   $get_vhost_remove_func = '_terminatur_vhost_remove_' . TERMINATUR_ENV;
@@ -451,45 +411,110 @@ function drush_terminatur_crushsite($sitename = FALSE) {
 /**
  * Obliterate a local site
  */
-function drush_terminatur_newsite() {
+function drush_terminatur_newsite($sitename = FALSE) {
+  // Grabs info about the site
+  if (!$sitename) {
+    $sitename = drush_get_option('sitename');
+  }
+  if (!ctype_lower($sitename)) {
+    drush_log(dt("New sitename can only be lowercase letters."), 'error');
+    return;
+  }
+  // Do a different check here because a local site does not have a DB method set
+  if (!drush_shell_exec('mysql --version')) {
+    drush_log(dt("You need at least MySQL for this to work."), 'error');
+    return;
+  }
 
+  // Gets some options or sets defaults
+  $destination = drush_get_option('destination');
+  if (!$destination) {
+    $destination = TERMINATUR_DEFAULT_WEBROOT;
+  }
   $profile = drush_get_option('profile');
+  if (!$profile) {
+    $profile = TERMINATUR_DEFAULT_PROFILE;
+  }
   $site_name = drush_get_option('site-name');
-
-  // Set a default profile if not set
-  if (!isset($profile)) {
-    $profile = 'panopoly';
+  if (!$site_name) {
+    $site_name = TERMINATUR_DEFAULT_SITENAME;
+  }
+  $db_user = drush_get_option('user');
+  if (!$db_user) {
+    $db_user = TERMINATUR_DEFAULT_DB_USER;
+  }
+  $db_pass = drush_get_option('password');
+  if (!$db_pass) {
+    $db_pass = TERMINATUR_DEFAULT_DB_PASS;
+  }
+  $db_host = drush_get_option('host');
+  if (!$db_host) {
+    $db_host = TERMINATUR_DEFAULT_DB_HOST;
+  }
+  $db_port = drush_get_option('port');
+  if (!$db_port ) {
+    $db_port  = TERMINATUR_DEFAULT_DB_PORT;
+  }
+  // Set options for Vanilla D7
+  $download = $profile;
+  if ($profile == 'drupal7') {
+    $download = 'drupal';
+  }
+  $install = $profile;
+  if ($profile == 'drupal7') {
+    $install = 'standard';
+  }
+  // This check has to happen here because we need $destination
+  if (is_dir($destination . $sitename)) {
+    drush_log(dt("Already a site there, try another name."), 'error');
+    return;
   }
 
-  if (!is_dir("/var/www/" . $site['site'])) {
-    // Set sitename
-    $site['site-name'] = $site_name ? $site_name : $site['site'];
+  drush_log(dt("Building new site..."), 'warning');
 
-    // Download distro in webroot
-    $download = $profile;
-    $download_message = 'We are now downloading the ' . $profile . ' distribution';
-    if ($profile == 'drupal7') { // If vanilla Drupal 7.
-      $download = 'drupal';
-      $download_message = 'We are now downloading Drupal 7';
-    }
-    drush_log($download_message, 'success');
-    drush_shell_exec("cd /var/www && drush dl " . $download . " --drupal-project-rename=" . $site['site'] . " -y");
+  // @todo: depending on what we do in the future, maybe NEWSITE creation should be abstracted out as well?
+  // This should verify a DB connection and create a DB
+  // We need to run this first before there is a settings.php
+  // We will run it again later to validate a new settings file
+  // We also need to build a faux site array to get it to do what we want.
+  $site = array();
+  $site['machine-name'] = $sitename;
+  $databases = _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port);
+  // Download the profile
+  // Set download command arguments
+  $dl_args = array($download);
+  // DL options
+  $dl_options = array(
+    'destination' => $destination,
+    'drupal-project-rename' => $sitename,
+    'y' => TRUE,
+  );
+  drush_invoke_process('', 'pm-download', $dl_args, $dl_options);
 
-    // Spin up empty DB
-    if (drush_shell_exec("mysql -uroot -ppassword -hlocalhost -e \"create database " . $site['kaladb'] . "\"")) {
-      drush_log('Dearest friend, a new database called ' . $site['kaladb'] . ' hath been created', 'success');
-    }
+  // Install options
+  $db_url = 'mysql://' . $databases['default']['default']['username'] . ':' . $databases['default']['default']['password'] . '@' . $databases['default']['default']['host'] . ':' . $databases['default']['default']['port'] . '/' . $databases['default']['default']['database'];
+  $account_pass = TERMINATUR_DEFAULT_USERPASS;
 
-    // Run the site install
-    $install = $profile;
-    if ($profile == 'drupal7') { // If vanilla Drupal 7.
-      $install = 'standard';
-    }
-    drush_log('Building a new ' . $profile . 'site.', 'success');
-    if (drush_shell_exec("cd /var/www/" . $site['site'] . " && drush site-install " . $install . " -y --db-url=mysql://root:password@localhost/" . $site['kaladb'] . " --account-pass=admin")) {
-      drush_log('Build complete', 'success');
-    }
-  }
+  // Sadly have to do it this way because site-install doesnt let us specify a dir
+  // @todo: add in more options for admin name/email, etc
+  drush_shell_exec("cd " . $destination . $sitename . " && drush site-install " . $install . " -y --db-url=" . $db_url . " --account-pass=" . $account_pass . " --site-name='" . $site_name . "'");
+
+  // Update the new settings file
+  $databases = _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port);
+
+  // Build vhost add callback function
+  $get_vhost_add_func = '_terminatur_vhost_add_' . TERMINATUR_ENV;
+  $get_vhost_add_func($sitename, $destination);
+
+  // Build host add callback function
+  $get_host_add_func = '_terminatur_host_add_' . TERMINATUR_ENV;
+  $get_host_add_func($sitename . TERMINATUR_LOCAL_SUFFIX);
+
+  // Clear cache
+  drush_invoke_process('@' . TERMINATUR_LOCAL_PREFIX . '.' . $sitename . TERMINATUR_LOCAL_SUFFIX, 'cache-clear', array('all'), array('y'));
+
+  // Finish
+  drush_log('New site built!', 'success');
 }
 
 /**
@@ -515,6 +540,32 @@ function _terminatur_get_environment() {
   else {
     return 'default';
   }
+}
+
+/**
+ * Determine what environmental file to load
+ */
+function _terminatur_get_site($sitename, $allow_local = FALSE) {
+  $sites = terminatur_bootstrap();
+  $site = isset($sites[$sitename]) ? $sites[$sitename] : FALSE;
+  if (!$site && !$allow_local) {
+    drush_log(dt("Not a valid Pantheon site."), 'error');
+    return;
+  }
+  if ($site) {
+    return $site;
+  }
+  if ($allow_local) {
+    $aliases = array();
+    if (file_exists(TERMINATUR_LOCAL_ALIASES_FILE)) {
+      require TERMINATUR_LOCAL_ALIASES_FILE;
+    }
+    $site = $aliases[$sitename];
+    if ($site) {
+      return $site;
+    }
+  }
+  drush_log(dt("Not a valid a valid Pantheon or local site."), 'error');
 }
 
 

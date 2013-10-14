@@ -18,9 +18,10 @@ function _terminatur_settings_validate($settings_file) {
     // Settings have been touched by the terminatur before
     // But let's verify they still work
     $databases = array();
+    $drupal_6 = FALSE;
     // Get Drupal 6 stuff
     if (strpos($settings, "db_url") !== false) {
-      $drupal_6 = true;
+      $drupal_6 = TRUE;
       $db_url = '';
       $db_prefix = '';
     }
@@ -54,6 +55,10 @@ function _terminatur_settings_build($settings_file, &$databases) {
   }
 
   $build_settings_func = '_terminatur_settings_build_' . $drupal_version;
+  // Make sure the file is writable
+  if (!chmod($settings_file, 0644)) {
+    drush_log(dt("Settings file needs to be writable."), 'error');
+  }
   $settings_file = $build_settings_func($settings_file, $databases);
 
   return _terminatur_settings_validate($settings_file);
@@ -65,10 +70,7 @@ function _terminatur_settings_build($settings_file, &$databases) {
 function _terminatur_settings_build_6($settings_file, &$databases) {
   // Open this way so we can append
   $fh = fopen($settings_file, 'a') or die("can't open file");
-  $conditional = "if (!isset(\$_SERVER['PANTHEON_ENVIRONMENT'])) { \n";
-  if (KALABOX === TRUE) {
-    $conditional = "if (isset(\$_SERVER['KALABOX']) &&  \$_SERVER['KALABOX'] === 'on') { \n";
-  }
+  $output = '';
 
   // Build the DB string
   $db_url = $databases['default']['default']['driver'] . '://' . $databases['default']['default']['username'] . ':' . $databases['default']['default']['password'] . '@' . $databases['default']['default']['host']. ':' . $databases['default']['default']['port'] . '/' . $databases['default']['default']['database'];
@@ -82,7 +84,7 @@ function _terminatur_settings_build_6($settings_file, &$databases) {
   $output .= " * You may see them if you use Kalastack, Kalabox, Proviso or other local dev tools. \n";
   $output .= " * \n";
   $output .= " */ \n";
-  $output .=  $conditional;
+  $output .=  TERMINATUR_SETTINGS_CONDITIONAL . " \n";
   $output .= "  // DB String \n";
   $output .= "  \$db_url = '" . $db_url .  "';\n";
   $output .= "}\n";
@@ -101,10 +103,7 @@ function _terminatur_settings_build_6($settings_file, &$databases) {
 function _terminatur_settings_build_7($settings_file, &$databases) {
   // Open this way so we can append
   $fh = fopen($settings_file, 'a') or die("can't open file");
-  $conditional = "if (!isset(\$_SERVER['PANTHEON_ENVIRONMENT'])) { \n";
-  if (KALABOX === TRUE) {
-    $conditional = "if (isset(\$_SERVER['KALABOX']) &&  \$_SERVER['KALABOX'] === 'on') { \n";
-  }
+  $output = '';
 
   // Generate the output
   $output .= "\n";
@@ -115,7 +114,7 @@ function _terminatur_settings_build_7($settings_file, &$databases) {
   $output .= " * You may see them if you use Kalastack, Kalabox, Proviso or other local dev tools. \n";
   $output .= " * \n";
   $output .= " */ \n";
-  $output .=  $conditional;
+  $output .=  TERMINATUR_SETTINGS_CONDITIONAL . " \n";
   $output .= "  // DB Array and some common conf \n";
   $output .= "  \$databases['default']['default'] = array( \n";
   $output .= "    'driver' => '" . $databases['default']['default']['driver'] . "',\n";

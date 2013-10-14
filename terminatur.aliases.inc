@@ -11,14 +11,13 @@
  */
 function _terminatur_aliases_add_alias($site, $destination) {
   // Create an aliases file if there are no local sites
+  $aliases = array();
   if (!file_exists(TERMINATUR_LOCAL_ALIASES_FILE)) {
     file_put_contents(TERMINATUR_LOCAL_ALIASES_FILE, "");
-    $aliases = array();
   }
 
   // Load the local aliases file
   require TERMINATUR_LOCAL_ALIASES_FILE;
-
   // Restore to first made first listed
   $aliases = array_reverse($aliases);
   if (!isset($aliases[$site['machine-name'] . TERMINATUR_LOCAL_SUFFIX])) {
@@ -27,9 +26,10 @@ function _terminatur_aliases_add_alias($site, $destination) {
       'root' => $destination . $site['machine-name'],
       'uri' => $site['machine-name'] . TERMINATUR_LOCAL_SUFFIX,
       'read-name' => $site['machine-name'],
+      'machine-name' => $site['machine-name'],
     );
     // If built from somewhere, indicate that here
-    if ($site['built-from']) {
+    if (isset($site['built-from'])) {
       $aliases[$site['machine-name'] . TERMINATUR_LOCAL_SUFFIX]['built-from'] = $site['built-from'];
     }
   }
@@ -38,14 +38,16 @@ function _terminatur_aliases_add_alias($site, $destination) {
   $aliases = array_reverse($aliases);
 
   // Build output
+  // @todo use other output functions
   $output = "<?php \n\n";
   foreach ($aliases as $key => $value) {
     $output .= "\$aliases['" . $key . "'] = array(\n";
     $output .= "  'root' => '" . $value['root'] . "',\n";
     $output .= "  'uri' => '" . $value['uri'] . "',\n";
     $output .= "  'read-name' => '" . addslashes($value['read-name']) .  "',\n";
+    $output .= "  'machine-name' => '" . $value['machine-name'] .  "',\n";
     // Only include built froms if they exist
-    if ($value['built-from']) {
+    if (isset($value['built-from'])) {
       $output .= "  'built-from' => '" . $value['built-from'] .  "',\n";
     }
     $output .= ");\n";

@@ -226,7 +226,7 @@ function _terminatur_code_options(&$aliases) {
  */
 function _terminatur_data_options(&$aliases) {
   // Check if user has MySQL
-  $method = drush_shell_exec('git --version') ? 'mysql' : 'download';
+  $method = drush_shell_exec('mysql --version') ? 'mysql' : 'download';
   foreach ($aliases as $key => $value) {
     // Build DB stuff
     $regex = '/^mysql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)$/';

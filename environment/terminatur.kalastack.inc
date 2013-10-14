@@ -20,11 +20,17 @@ define('TERMINATUR_DEFAULT_DB_PORT', '3306');
 
 define('TERMINATUR_DEFAULT_DEFAULT_DIR', '/sites/default/');
 define('TERMINATUR_DEFAULT_FILES_DIR', 'files');
+define('TERMINATUR_SETTINGS_CONDITIONAL', "if (isset(\$_SERVER['KALABOX']) &&  \$_SERVER['KALABOX'] === 'on') { \n");
 
 define('TERMINATUR_VHOST_AVAIL_DIR', '/etc/kalastack/vhosts/sites-available/');
 define('TERMINATUR_VHOST_ENABLED_DIR', '/etc/kalastack/vhosts/sites-enabled/');
 define('TERMINATUR_VHOST_RESTART', 'sudo service nginx restart');
+
 define('TERMINATUR_HOSTS_FILE', '/etc/hosts');
+
+define('TERMINATUR_DEFAULT_PROFILE', 'panopoly');
+define('TERMINATUR_DEFAULT_SITENAME', 'My Awesome Site');
+define('TERMINATUR_DEFAULT_USERPASS', 'admin');
 
 // Set our own log printing function:
 drush_set_context('DRUSH_LOG_CALLBACK', 'terminatur_print_log');
@@ -32,25 +38,25 @@ drush_set_context('DRUSH_LOG_CALLBACK', 'terminatur_print_log');
 /**
  * Creates a vhost for a newly built or created site
  */
-function _terminatur_vhost_add_kalastack($site, $destination) {
+function _terminatur_vhost_add_kalastack($machine_name, $destination) {
   // Get the site machine name and parse it correctly
   // Create a vhost if it doesnt already exit
-  if (!file_exists(TERMINATUR_VHOST_AVAIL_DIR . $site['machine-name'])) {
+  if (!file_exists(TERMINATUR_VHOST_AVAIL_DIR . $machine_name)) {
     // Make sure a site is actually where it is supposed to be
-    if (is_dir($destination . $sitename['machine-name'])) {
+    if (is_dir($destination . $machine_name)) {
       // Grab a template
-      copy("/etc/nginx/sites-available/drupaldefault", TERMINATUR_TMP_DIR . $site['machine-name']);
-      $vhost_default_string = file_get_contents(TERMINATUR_TMP_DIR . $site['machine-name']);
+      copy("/etc/nginx/sites-available/drupaldefault", TERMINATUR_TMP_DIR . $machine_name);
+      $vhost_default_string = file_get_contents(TERMINATUR_TMP_DIR . $machine_name);
 
       // Load up default drupal vhost and update with new site info
       $search = array("drupal.kala", "/var/www/drupal", "# THIS IS MEANT TO BE USED FOR BUILDING OTHER DRUPAL VHOSTS");
-      $replace = array($site['machine-name'] . TERMINATUR_LOCAL_SUFFIX, $destination . $site['machine-name'], "");
+      $replace = array($machine_name . TERMINATUR_LOCAL_SUFFIX, $destination . $machine_name, "");
       $vhost_default_string = str_replace($search, $replace, $vhost_default_string);
 
       // Write the file and symlink it to sites-enabled
-      file_put_contents(TERMINATUR_TMP_DIR . $site['machine-name'], $vhost_default_string);
-      copy(TERMINATUR_TMP_DIR . $site['machine-name'], TERMINATUR_VHOST_AVAIL_DIR . $site['machine-name']);
-      symlink(TERMINATUR_VHOST_AVAIL_DIR . $site['machine-name'], TERMINATUR_VHOST_ENABLED_DIR . $site['machine-name']);
+      file_put_contents(TERMINATUR_TMP_DIR . $machine_name, $vhost_default_string);
+      copy(TERMINATUR_TMP_DIR . $machine_name, TERMINATUR_VHOST_AVAIL_DIR . $machine_name);
+      symlink(TERMINATUR_VHOST_AVAIL_DIR . $machine_name, TERMINATUR_VHOST_ENABLED_DIR . $machine_name);
 
       // Restart nginx so the site actually is active
       _terminatur_vhost_restart_kalastack();
