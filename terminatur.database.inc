@@ -93,8 +93,8 @@ function _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, 
   // Check to see if code exists
   if (is_dir($destination . $site['machine-name'])) {
     // Validate settings file if applicable
-    if (file_exists($destination . $site['machine-name'] . "/sites/default/settings.php")) {
-      $settings_file = $destination . $site['machine-name'] . "/sites/default/settings.php";
+    if (file_exists($destination . $site['machine-name'] . TERMINATUR_DEFAULT_DEFAULT_DIR . "settings.php")) {
+      $settings_file = $destination . $site['machine-name'] . TERMINATUR_DEFAULT_DEFAULT_DIR . "settings.php";
       if (!$databases = _terminatur_settings_validate($settings_file)) {
         $databases = array();
         $databases = _terminatur_data_parse_db_url($db_url, NULL);
@@ -106,6 +106,11 @@ function _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, 
       // Let's build a local alias for it
       _terminatur_aliases_add_alias($site, $destination);
       return $databases;
+    }
+    elseif (file_exists($destination . $site['machine-name'] . TERMINATUR_DEFAULT_DEFAULT_DIR . "default.settings.php")) {
+      // Sometimes settings.php is gitignored so we should instantiate one and try again
+      copy($destination . $site['machine-name'] . TERMINATUR_DEFAULT_DEFAULT_DIR . "default.settings.php", $destination . $site['machine-name'] . TERMINATUR_DEFAULT_DEFAULT_DIR . "settings.php");
+      _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port);
     }
   }
   else {
