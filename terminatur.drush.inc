@@ -120,6 +120,24 @@ function terminatur_drush_command() {
     'examples' => array(
       'drush crushsite sitename.dev' => 'Removes a site at @pantheon.mysite.dev or @kalabox.mysite.dev completely.',
      ),
+    'options' => array(
+      'user' => array(
+        'description' => 'A MySQL user with creds to create DBz.',
+        'example-value' => 'root',
+      ),
+      'password' => array(
+        'description' => 'The password for the MySQL user.',
+        'example-value' => 'password',
+      ),
+      'host' => array(
+        'description' => 'The host of the MySQL server.',
+        'example-value' => 'localhost',
+      ),
+      'port' => array(
+        'description' => 'The port of the MySQL server.',
+        'example-value' => '3306',
+      ),
+    ),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
   $items['terminatur-newsite'] = array(
@@ -384,41 +402,50 @@ function drush_terminatur_crushsite($sitename = FALSE) {
     return;
   }
 
-  // If that site actually exists...
-  if (isset($site['site'])) {
-    drush_print('PREPARE TO RIDE ON EL CRUSH BUS');
-
-    // Remove Code and Files
-    $web_root = "/var/www/" . $site['site'];
-    // Make write-protected directory and files writable so we can remove them.
-    chmod($web_root . '/sites/default', 0755);
-    chmod($web_root . '/sites/default/default.settings.php', 0644);
-    chmod($web_root . '/sites/default/settings.php', 0644);
-    // Remove the webroot and everything in it.
-    if (drush_shell_exec("rm -rf " . $web_root)) {
-      drush_log('CODES/FILES = FUCKING CRUSHED', 'success');
-    }
-
-    // Remove Data
-    if (drush_shell_exec("mysql -uroot -ppassword -hlocalhost -e \"drop database " . $site['kaladb'] . "\"")) {
-      drush_log('DB = FUCKING CRUSHED', 'success');
-    }
-
-    // Remove VHOST
-    if (drush_shell_exec("sudo rm -rf /etc/kalastack/vhosts/sites-available/" . $site['site'])) {
-      if (drush_shell_exec("sudo rm -rf /etc/kalastack/vhosts/sites-enabled/" . $site['site'])) {
-        drush_log('VHOST = FUCKING CRUSHED', 'success');
-      }
-    }
-
-    // Restart nginx
-    drush_shell_exec("sudo service nginx restart");
-
-    // Remove hosts entry
-    kala_remove_etc_hosts($site['site'] . ".kala");
-    _kala_remove_alias($site);
-    drush_log('SITE = FUCKING CRUSHED', 'success');
+  if ($site['terminatur']['database']['method'] != 'mysql') {
+    drush_log(dt("You need at least MySQL for this to work."), 'error');
+    return;
   }
+
+  // Gets some options or sets defaults
+  $destination = drush_get_option('destination');
+  if (!$destination) {
+    $destination = TERMINATUR_DEFAULT_WEBROOT;
+  }
+  $db_user = drush_get_option('user');
+  if (!$db_user) {
+    $db_user = TERMINATUR_DEFAULT_DB_USER;
+  }
+  $db_pass = drush_get_option('password');
+  if (!$db_pass) {
+    $db_pass = TERMINATUR_DEFAULT_DB_PASS;
+  }
+  $db_host = drush_get_option('host');
+  if (!$db_host) {
+    $db_host = TERMINATUR_DEFAULT_DB_HOST;
+  }
+  $db_port = drush_get_option('port');
+  if (!$db_port ) {
+    $db_port  = TERMINATUR_DEFAULT_DB_PORT;
+  }
+
+  _terminatur_code_remove($site, $destination, $db_user, $db_pass, $db_host, $db_port);
+  _terminatur_data_remove($site, $destination, $db_user, $db_pass, $db_host, $db_port);
+  _terminatur_files_remove($site, $destination, $db_user, $db_pass, $db_host, $db_port);
+
+  // Build vhost remove callback function
+  $get_vhost_remove_func = '_terminatur_vhost_remove_' . TERMINATUR_ENV;
+  $get_vhost_remove_func($site['machine-name']);
+
+  // Build host remove callback function
+  $get_host_remove_func = '_terminatur_host_remove_' . TERMINATUR_ENV;
+  $get_host_remove_func($site['machine-name'] . TERMINATUR_LOCAL_SUFFIX);
+
+  // Remove local alias
+  _terminatur_aliases_remove_alias($site['machine-name']);
+
+  // Done
+  drush_log('Site removed.', 'success');
 }
 
 /**

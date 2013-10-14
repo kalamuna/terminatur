@@ -53,7 +53,7 @@ function _terminatur_vhost_add_kalastack($site, $destination) {
       symlink(TERMINATUR_VHOST_AVAIL_DIR . $site['machine-name'], TERMINATUR_VHOST_ENABLED_DIR . $site['machine-name']);
 
       // Restart nginx so the site actually is active
-      drush_shell_exec(TERMINATUR_VHOST_RESTART);
+      _terminatur_vhost_restart_kalastack();
     }
   }
 }
@@ -61,7 +61,20 @@ function _terminatur_vhost_add_kalastack($site, $destination) {
 /**
  * Removes a vhost for a newly built or created site
  */
-function _terminatur_vhost_remove_kalastack($site, $destination) {
+function _terminatur_vhost_remove_kalastack($machine_name) {
+  // Do it this way so we can use SUDO and be sure
+  drush_shell_exec("sudo rm -rf " . TERMINATUR_VHOST_AVAIL_DIR . $machine_name);
+  drush_shell_exec("sudo rm -rf " . TERMINATUR_VHOST_ENABLED_DIR . $machine_name);
+
+  // Restart nginx so the site actually is active
+  _terminatur_vhost_restart_kalastack();
+}
+
+/**
+ * Restart the webserver
+ */
+function _terminatur_vhost_restart_kalastack() {
+  drush_shell_exec(TERMINATUR_VHOST_RESTART);
 }
 
 /**

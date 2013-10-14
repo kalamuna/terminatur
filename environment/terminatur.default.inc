@@ -40,6 +40,13 @@ function _terminatur_vhost_remove_default($site, $destination) {
 }
 
 /**
+ * Restarts the webserver
+ */
+function _terminatur_vhost_restart_default() {
+  drush_shell_exec(TERMINATUR_VHOST_RESTART);
+}
+
+/**
  * Creates an entry for the hosts file
  */
 function _terminatur_host_add_default($hostname) {

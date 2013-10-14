@@ -59,7 +59,7 @@ function _terminatur_aliases_add_alias($site, $destination) {
  * Remove a local alias
  * @param  array or string $site an array of the sites info or the uparsed machine argument
  */
-function _terminatur_aliases_remove_alias($site, $destination) {
+function _terminatur_aliases_remove_alias($machine_name) {
   // Load alias file if it exists
   if (file_exists(TERMINATUR_LOCAL_ALIASES_FILE)) {
     $aliases = array();
@@ -70,8 +70,8 @@ function _terminatur_aliases_remove_alias($site, $destination) {
   }
 
   // Load the kala aliases file
-  if (isset($aliases[$site['machine-name'] . TERMINATUR_LOCAL_SUFFIX])) {
-    unset($aliases[$site['machine-name'] . TERMINATUR_LOCAL_SUFFIX]);
+  if (isset($aliases[$machine_name . TERMINATUR_LOCAL_SUFFIX])) {
+    unset($aliases[$machine_name . TERMINATUR_LOCAL_SUFFIX]);
   }
 
   // Build output
