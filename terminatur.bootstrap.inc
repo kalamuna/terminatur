@@ -7,7 +7,6 @@
 // Constants
 define('TERMINATUR_SSH_KEY', 'terminatur.id_rsa');
 define('TERMINATUR_PANTHEON_ALIASES_FILE', TERMINATUR_DRUSH_DIR . 'pantheon.aliases.drushrc.php');
-define('TERMINATUR_LOCAL_ALIASES_FILE', TERMINATUR_DRUSH_DIR . 'local.aliases.drushrc.php');
 
 /**
  * Ensures user has set up SSH and has downloaded their Pantheon aliases file.
@@ -238,7 +237,7 @@ function _terminatur_data_options(&$aliases) {
     $aliases[$key]['terminatur']['database']['db-host'] = $matches[3];
     $aliases[$key]['terminatur']['database']['db-port'] = $matches[4];
     $aliases[$key]['terminatur']['database']['db-db'] = $matches[5];
-    $aliases[$key]['terminatur']['database']['local-db'] = str_replace("-", "_", $aliases[$key]['machine-name'] . "_local");
+    $aliases[$key]['terminatur']['database']['local-db'] = str_replace("-", "_", $aliases[$key]['machine-name'] . TERMINATUR_DB_SUFFIX);
     $aliases[$key]['terminatur']['database']['method'] = $method;
 
     $bucket = terminus_latest_bucket($aliases[$key]['uuid'], $aliases[$key]['env'], 'database');

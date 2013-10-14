@@ -7,7 +7,10 @@
 
 // Constants
 define('TERMINATUR_LOCAL_SUFFIX', '.local');
+define('TERMINATUR_LOCAL_PREFIX', 'local');
+define('TERMINATUR_DC_SUFFIX', '_local');
 define('TERMINATUR_DRUSH_DIR', getenv('HOME') . DIRECTORY_SEPARATOR . '.drush' . DIRECTORY_SEPARATOR);
+define('TERMINATUR_LOCAL_ALIASES_FILE', TERMINATUR_DRUSH_DIR . 'local.aliases.drushrc.php');
 
 define('TERMINATUR_DEFAULT_WEBROOT', '/var/www/');
 define('TERMINATUR_DEFAULT_DB_USER', 'root');
