@@ -172,6 +172,15 @@ function terminatur_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
 
+  $items['terminatur-set-git'] = array(
+    'description' => dt('Sets your gitconfig with your Pantheon profile info'),
+    'aliases' => array('tset'),
+    'examples' => array(
+      'drush tset' => 'Grabs your Pantheon aliases and Terminates them.',
+     ),
+    'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
+  );
+
   return $items;
 }
 
@@ -525,6 +534,26 @@ function drush_terminatur_aliases() {
 }
 
 /**
+ * Set's your gitconfig with Pantheon profile info
+ */
+function drush_terminatur_set_git() {
+  // Do a different check here because a local site does not have a DB method set
+  if (!drush_shell_exec('git --version')) {
+    drush_log(dt("You need git for this shit."), 'error');
+    return;
+  }
+  $user = array();
+  $user = _terminatur_get_user();
+
+  // Set git config
+  drush_shell_exec("git config --global user.name \"" . $user->profile->firstname . " " . $user->profile->lastname . "\"");
+  drush_shell_exec("git config --global user.email " . $user->email);
+
+  // Yay!
+  drush_log('Git username and email have been set!', 'success');
+}
+
+/**
  * Determine what environmental file to load
  */
 function _terminatur_get_environment() {
@@ -533,6 +562,7 @@ function _terminatur_get_environment() {
     define('KALABOX', TRUE);
     return 'kalastack';
   }
+
   // elseif @todo some check for mamp
   // elseif @todo some check for meglodon
   // elseif @todo some check for devstack

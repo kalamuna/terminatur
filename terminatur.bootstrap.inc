@@ -67,6 +67,31 @@ function _terminatur_get_session() {
 }
 
 /**
+ * Get's
+ *
+ * @return array
+ *   Terminus session data.
+ */
+function _terminatur_get_user() {
+  // Use current session if there is one.
+  $session_data = terminus_bootstrap();
+  if (isset($session_data['email']) && terminus_validate_session($session_data)) {
+    $session = $session_data;
+  }
+  else {
+    // Otherwise, authenticate with Terminus.
+    // @todo: we need a way to do this that is not interactive for kalaboxage
+    $email = drush_prompt(dt('Pantheon dashboard email'), NULL, TRUE);
+    drush_terminus_pantheon_auth($email);
+    // @todo Handle authentication failure.
+    $session = terminus_bootstrap();
+  }
+
+  $result = terminus_api_user_get($session['user_uuid']);
+  return json_decode($result['json']);
+}
+
+/**
  * Finds any keys on the host that are registered with Pantheon.
  *
  * @return array|bool
