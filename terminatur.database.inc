@@ -42,6 +42,7 @@ function _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_hos
   }
 
   // Parse download data and begin the download
+  $fail = FALSE;
   $result = $site['terminatur']['database']['download-data'];
   $data = json_decode($result['json']);
   $filename = strstr(basename($data->url), '?', '_');
@@ -136,7 +137,7 @@ function _terminatur_data_parse_db_url($db_url, $db_prefix) {
       // MySQLi uses the mysql driver.
       'driver' => $url['scheme'] == 'mysqli' ? 'mysql' : $url['scheme'],
       // Remove the leading slash to get the database name.
-      'database' => substr(urldecode($url['path']), 1),
+      'database' => str_replace("-", "_", substr(urldecode($url['path']), 1)),
       'username' => urldecode($url['user']),
       'password' => isset($url['pass']) ? urldecode($url['pass']) : '',
       'host' => urldecode($url['host']),
