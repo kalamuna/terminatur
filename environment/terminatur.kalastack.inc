@@ -71,7 +71,7 @@ function _terminatur_vhost_remove_kalastack($machine_name) {
   // Do it this way so we can use SUDO and be sure
   // Also only do this if we have a machine_name otherwise we will kill all our
   // vhosts and that is bad
-  if (isset($machine_name) {
+  if (isset($machine_name)) {
     drush_shell_exec("sudo rm -rf " . TERMINATUR_VHOST_AVAIL_DIR . $machine_name);
     drush_shell_exec("sudo rm -rf " . TERMINATUR_VHOST_ENABLED_DIR . $machine_name);
 
