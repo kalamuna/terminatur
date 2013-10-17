@@ -218,7 +218,6 @@ function drush_terminatur_code($sitename = FALSE) {
  */
 function drush_terminatur_data($sitename = FALSE) {
   // Grabs info about the site
-  // Grabs info about the site
   if (!$sitename) {
     $sitename = drush_get_option('sitename');
   }
@@ -260,7 +259,6 @@ function drush_terminatur_data($sitename = FALSE) {
  * @return if fails
  */
 function drush_terminatur_files($sitename = FALSE) {
-  // Grabs info about the site
   // Grabs info about the site
   if (!$sitename) {
     $sitename = drush_get_option('sitename');
@@ -360,7 +358,6 @@ function drush_terminatur_pullsite($sitename = FALSE) {
  * Obliterate a local site
  */
 function drush_terminatur_crushsite($sitename = FALSE) {
-  // Grabs info about the site
   // Grabs info about the site
   if (!$sitename) {
     $sitename = drush_get_option('sitename');

@@ -76,10 +76,12 @@ function _terminatur_files_set_up_dirs($site, $destination) {
  * Removes the files
  */
 function _terminatur_files_remove($site, $destination) {
-  // Remove Code
-  $files_dir = _terminatur_files_download_location($site, $destination) . TERMINATUR_DEFAULT_DEFAULT_DIR . TERMINATUR_DEFAULT_FILES_DIR;
-  // Remove the files dir and everything in it.
-  // Need to run shell command because PHP isnt great at complete destruction
-  drush_shell_exec("rm -rf " . $files_dir);
+  // Remove Code and check for a site name and destination before we kill everything by accident
+  if (isset($site) && isset($destination)) {
+    $files_dir = _terminatur_files_download_location($site, $destination) . TERMINATUR_DEFAULT_DEFAULT_DIR . TERMINATUR_DEFAULT_FILES_DIR;
+    // Remove the files dir and everything in it.
+    // Need to run shell command because PHP isnt great at complete destruction
+    drush_shell_exec("rm -rf " . $files_dir);
+  }
 }
 

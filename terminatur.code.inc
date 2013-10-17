@@ -62,15 +62,18 @@ function _terminatur_code_download($site, $destination) {
  * Removes the code
  */
 function _terminatur_code_remove($site, $destination) {
-  // Remove Code
-  $web_root = $destination . $site['machine-name'];
-  // Make write-protected directory and files writable so we can remove them.
-  if (is_dir($web_root . TERMINATUR_DEFAULT_DEFAULT_DIR)) {
-    chmod($web_root . TERMINATUR_DEFAULT_DEFAULT_DIR, 0755);
-    chmod($web_root . TERMINATUR_DEFAULT_DEFAULT_DIR . 'default.settings.php', 0644);
-    chmod($web_root . TERMINATUR_DEFAULT_DEFAULT_DIR . 'settings.php', 0644);
+  // Remove Code but first make sure we have a machine name before we
+  // inadvertently destroy the entire webroot
+  if (isset($site['machine-name'])) {
+    $web_root = $destination . $site['machine-name'];
+    // Make write-protected directory and files writable so we can remove them.
+    if (is_dir($web_root . TERMINATUR_DEFAULT_DEFAULT_DIR)) {
+      chmod($web_root . TERMINATUR_DEFAULT_DEFAULT_DIR, 0755);
+      chmod($web_root . TERMINATUR_DEFAULT_DEFAULT_DIR . 'default.settings.php', 0644);
+      chmod($web_root . TERMINATUR_DEFAULT_DEFAULT_DIR . 'settings.php', 0644);
+    }
+    // Remove the webroot and everything in it.
+    // Need to run shell command because PHP isnt great at complete destruction
+    drush_shell_exec("rm -rf " . $web_root);
   }
-  // Remove the webroot and everything in it.
-  // Need to run shell command because PHP isnt great at complete destruction
-  drush_shell_exec("rm -rf " . $web_root);
 }

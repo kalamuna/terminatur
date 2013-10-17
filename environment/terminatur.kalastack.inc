@@ -69,11 +69,15 @@ function _terminatur_vhost_add_kalastack($machine_name, $destination) {
  */
 function _terminatur_vhost_remove_kalastack($machine_name) {
   // Do it this way so we can use SUDO and be sure
-  drush_shell_exec("sudo rm -rf " . TERMINATUR_VHOST_AVAIL_DIR . $machine_name);
-  drush_shell_exec("sudo rm -rf " . TERMINATUR_VHOST_ENABLED_DIR . $machine_name);
+  // Also only do this if we have a machine_name otherwise we will kill all our
+  // vhosts and that is bad
+  if (isset($machine_name) {
+    drush_shell_exec("sudo rm -rf " . TERMINATUR_VHOST_AVAIL_DIR . $machine_name);
+    drush_shell_exec("sudo rm -rf " . TERMINATUR_VHOST_ENABLED_DIR . $machine_name);
 
-  // Restart nginx so the site actually is active
-  _terminatur_vhost_restart_kalastack();
+    // Restart nginx so the site actually is active
+    _terminatur_vhost_restart_kalastack();
+  }
 }
 
 /**
@@ -104,7 +108,7 @@ function _terminatur_host_add_kalastack($hostname) {
 function _terminatur_host_remove_kalastack($hostname) {
   // @todo make this less ghetto
   // Actually check for hostname otherwise it wipes out other important stuff!
-  if ($hostname) {
+  if (isset($hostname)) {
     drush_shell_exec("sed /" . $hostname . "/d " . TERMINATUR_HOSTS_FILE . " > " . TERMINATUR_TMP_DIR . "hosts");
     drush_shell_exec("sudo cp -f /tmp/hosts /etc/hosts");
     unlink(TERMINATUR_TMP_DIR . "hosts");
