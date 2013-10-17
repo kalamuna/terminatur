@@ -22,7 +22,10 @@ function _terminatur_code_git($site, $destination) {
       return;
     }
     else {
-      drush_shell_exec("rm -rf " . $destination . $site['machine-name']);
+      // Do some checking so we don't delete the whole webroot!
+      if (isset($site['machine-name'])) {
+        drush_shell_exec("rm -rf " . $destination . $site['machine-name']);
+      }
     }
   }
   // Git clone for the first time

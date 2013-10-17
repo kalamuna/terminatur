@@ -103,9 +103,12 @@ function _terminatur_host_add_kalastack($hostname) {
  */
 function _terminatur_host_remove_kalastack($hostname) {
   // @todo make this less ghetto
-  drush_shell_exec("sed /" . $hostname . "/d " . TERMINATUR_HOSTS_FILE . " > " . TERMINATUR_TMP_DIR . "hosts");
-  drush_shell_exec("sudo cp -f /tmp/hosts /etc/hosts");
-  unlink(TERMINATUR_TMP_DIR . "hosts");
+  // Actually check for hostname otherwise it wipes out other important stuff!
+  if ($hostname)
+    drush_shell_exec("sed /" . $hostname . "/d " . TERMINATUR_HOSTS_FILE . " > " . TERMINATUR_TMP_DIR . "hosts");
+    drush_shell_exec("sudo cp -f /tmp/hosts /etc/hosts");
+    unlink(TERMINATUR_TMP_DIR . "hosts");
+  }
 }
 
 /**
