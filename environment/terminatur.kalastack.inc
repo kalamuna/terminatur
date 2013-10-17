@@ -116,6 +116,22 @@ function _terminatur_host_remove_kalastack($hostname) {
 }
 
 /**
+ * Additional tasks to run on pullsite
+ */
+function _terminatur_pullsite_kalastack($site) {
+  // Grab thumbnail image if on Kalabox
+  if (isset($site['thumbnail'])) {
+    // Check for and create an images directory if applicable
+    if (!is_dir(TERMINATUR_DEFAULT_WEBROOT . '.images')) {
+      mkdir(TERMINATUR_DEFAULT_WEBROOT . '.images');
+    }
+
+    // Download the thumbnail
+    _terminatur_download_image_kalastack($site['thumbnail'], TERMINATUR_DEFAULT_WEBROOT . '.images/' . $site['machine-name'] . '.png');
+  }
+}
+
+/**
  * Override of _drush_print_log().
  * It's mostly the same except for having non-error mesages print to standard
  * out instead of standard error.
@@ -202,5 +218,25 @@ function terminatur_print_log($entry) {
   $message = implode("\n", $lines);
   drush_print($message, 0, $output_type);
   return $return;
+}
+
+/*
+ * Grabs a Pantheon thumbnail and saves it if on Kalabox
+ */
+function _terminatur_download_image_kalastack($url, $destination) {
+  $ch = curl_init ($url);
+  curl_setopt($ch, CURLOPT_HEADER, 0);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+  curl_setopt($ch, CURLOPT_BINARYTRANSFER, 1);
+
+  $raw = curl_exec($ch);
+  curl_close ($ch);
+  if (file_exists($destination)) {
+    return;
+  }
+
+  $fp = fopen($destination, 'x');
+  fwrite($fp, $raw);
+  fclose($fp);
 }
 

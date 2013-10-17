@@ -350,6 +350,11 @@ function drush_terminatur_pullsite($sitename = FALSE) {
   // Clear cache
   drush_invoke_process('@' . TERMINATUR_LOCAL_PREFIX . '.' . $site['machine-name'] . TERMINATUR_LOCAL_SUFFIX, 'cache-clear', array('all'), array('y'));
 
+  // Run additional environnment specific pullsite tasks
+  if (function_exists($get_pull_more_func = '_terminatur_pullsite_' . TERMINATUR_ENV)) {
+    $get_pull_more_func($site);
+  }
+
   // Finish
   drush_log('Site built!', 'success');
 }
@@ -594,5 +599,3 @@ function _terminatur_get_site($sitename, $allow_local = FALSE) {
   }
   drush_log(dt("Not a valid a valid Pantheon or local site."), 'error');
 }
-
-
