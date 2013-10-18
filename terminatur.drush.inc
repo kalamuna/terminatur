@@ -410,7 +410,11 @@ function drush_terminatur_crushsite($sitename = FALSE) {
 
   // Build host remove callback function
   $get_host_remove_func = '_terminatur_host_remove_' . TERMINATUR_ENV;
-  $get_host_remove_func($site['machine-name'] . TERMINATUR_LOCAL_SUFFIX);
+  // If we don't check for this and pass in just the suffix we can wipe
+  // needed entries
+  if (isset($site['machine-name'])) {
+    $get_host_remove_func($site['machine-name'] . TERMINATUR_LOCAL_SUFFIX);
+  }
 
   // Remove local alias
   _terminatur_aliases_remove_alias($site['machine-name']);
