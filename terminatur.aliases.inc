@@ -32,29 +32,17 @@ function _terminatur_aliases_add_alias($site, $destination) {
     if (isset($site['built-from'])) {
       $aliases[$site['machine-name'] . TERMINATUR_LOCAL_SUFFIX]['built-from'] = $site['built-from'];
     }
+    // if has Thumbnail
+    // @todo: Want to make this kalastack specific at some point
+    if (isset($site['thumbnail'])) {
+      $aliases[$site['machine-name'] . TERMINATUR_LOCAL_SUFFIX]['thumbnail'] = 'http://root.kala/.images/' . $site['machine-name'] . '.png';
+    }
   }
 
   // Sort so that last added is listed first
   $aliases = array_reverse($aliases);
-
-  // Build output
-  // @todo use other output functions
-  $output = "<?php \n\n";
-  foreach ($aliases as $key => $value) {
-    $output .= "\$aliases['" . $key . "'] = array(\n";
-    $output .= "  'root' => '" . $value['root'] . "',\n";
-    $output .= "  'uri' => '" . $value['uri'] . "',\n";
-    $output .= "  'read-name' => '" . addslashes($value['read-name']) .  "',\n";
-    $output .= "  'machine-name' => '" . $value['machine-name'] .  "',\n";
-    // Only include built froms if they exist
-    if (isset($value['built-from'])) {
-      $output .= "  'built-from' => '" . $value['built-from'] .  "',\n";
-    }
-    $output .= ");\n";
-  }
-
-  // Write file
-  file_put_contents(TERMINATUR_LOCAL_ALIASES_FILE, $output);
+  // Write the file
+  _terminatur_aliases_write_aliases($aliases);
 }
 
 /**
@@ -76,14 +64,34 @@ function _terminatur_aliases_remove_alias($machine_name) {
     unset($aliases[$machine_name . TERMINATUR_LOCAL_SUFFIX]);
   }
 
+  // Sort so that last added is listed first
+  $aliases = array_reverse($aliases);
+  // Write the file
+  _terminatur_aliases_write_aliases($aliases);
+}
+
+/**
+ * Return an array with local site data
+ */
+function _terminatur_aliases_write_aliases($aliases) {
   // Build output
+  // @todo use other output functions
   $output = "<?php \n\n";
   foreach ($aliases as $key => $value) {
     $output .= "\$aliases['" . $key . "'] = array(\n";
     $output .= "  'root' => '" . $value['root'] . "',\n";
     $output .= "  'uri' => '" . $value['uri'] . "',\n";
     $output .= "  'read-name' => '" . addslashes($value['read-name']) .  "',\n";
-    $output .= "  'built-from' => '" . $value['built-from'] .  "',\n";
+    $output .= "  'machine-name' => '" . $value['machine-name'] .  "',\n";
+    // Only include built froms if they exist
+    if (isset($value['built-from'])) {
+      $output .= "  'built-from' => '" . $value['built-from'] .  "',\n";
+    }
+    // if has Thumbnail
+    // @todo: Want to make this kalastack specific at some point
+    if (isset($value['thumbnail'])) {
+      $output .= "  'thumbnail' => '" . $value['thumbnail'] .  "',\n";
+    }
     $output .= ");\n";
   }
 
