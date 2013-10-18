@@ -231,8 +231,9 @@ function _terminatur_download_image_kalastack($url, $destination) {
 
   $raw = curl_exec($ch);
   curl_close ($ch);
+  // Let's get up to date thumbs!
   if (file_exists($destination)) {
-    return;
+    unlink($destination);
   }
 
   $fp = fopen($destination, 'x');
