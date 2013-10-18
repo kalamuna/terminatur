@@ -20,7 +20,7 @@ include_once('terminatur.code.inc');
 include_once('terminatur.database.inc');
 include_once('terminatur.files.inc');
 include_once('terminatur.settings.inc');
-include_once('terminatur.aliases.inc');
+include_once('terminatur.utils.inc');
 
 /**
  * Implementation of hook_drush_command().
@@ -417,7 +417,9 @@ function drush_terminatur_crushsite($sitename = FALSE) {
   }
 
   // Remove local alias
-  _terminatur_aliases_remove_alias($site['machine-name']);
+  // Build alias callback function
+  $get_alias_func = '_terminatur_alias_remove_' . TERMINATUR_ENV;
+  $get_alias_func($site['machine-name']);
 
   // Done
   drush_log('Site removed.', 'success');
@@ -576,30 +578,4 @@ function _terminatur_get_environment() {
   else {
     return 'default';
   }
-}
-
-/**
- * Determine what environmental file to load
- */
-function _terminatur_get_site($sitename, $allow_local = FALSE) {
-  $sites = terminatur_bootstrap();
-  $site = isset($sites[$sitename]) ? $sites[$sitename] : FALSE;
-  if (!$site && !$allow_local) {
-    drush_log(dt("Not a valid Pantheon site."), 'error');
-    return;
-  }
-  if ($site) {
-    return $site;
-  }
-  if ($allow_local) {
-    $aliases = array();
-    if (file_exists(TERMINATUR_LOCAL_ALIASES_FILE)) {
-      require TERMINATUR_LOCAL_ALIASES_FILE;
-    }
-    $site = $aliases[$sitename];
-    if ($site) {
-      return $site;
-    }
-  }
-  drush_log(dt("Not a valid a valid Pantheon or local site."), 'error');
 }

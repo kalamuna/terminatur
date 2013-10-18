@@ -20,7 +20,7 @@ function _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_hos
   // Try to get the most up to date data with sql-sync-pipe
   if ($pipe) {
     if (function_exists('drush_sql_sync_pipe')) {
-      if (!$local_site = _terminatur_aliases_get_local_site($site['machine-name'])) {
+      if (!$local_site = _terminatur_aliases_get_local_site($site['machine-name'] . TERMINATUR_LOCAL_SUFFIX)) {
         drush_log(dt("You need to have a local site set up to use pipe."), 'error');
         return;
       }
@@ -105,7 +105,9 @@ function _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, 
       }
       // This means we should have a legit settings file with legit db creds
       // Let's build a local alias for it
-      _terminatur_aliases_add_alias($site, $destination);
+      // Build alias callback function
+      $get_alias_func = '_terminatur_alias_add_' . TERMINATUR_ENV;
+      $get_alias_func($site, $destination);
       return $databases;
     }
     elseif (file_exists($destination . $site['machine-name'] . TERMINATUR_DEFAULT_DEFAULT_DIR . "default.settings.php")) {
