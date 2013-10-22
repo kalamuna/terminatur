@@ -196,7 +196,9 @@ function drush_terminatur_code($sitename = FALSE) {
   if (!$sitename) {
     $sitename = drush_get_option('sitename');
   }
-  $site = _terminatur_get_site($sitename);
+  if (!$site = _terminatur_get_site($sitename)) {
+    return;
+  }
 
   // Gets the webroot
   $destination = drush_get_option('destination');
@@ -221,7 +223,9 @@ function drush_terminatur_data($sitename = FALSE) {
   if (!$sitename) {
     $sitename = drush_get_option('sitename');
   }
-  $site = _terminatur_get_site($sitename);
+  if (!$site = _terminatur_get_site($sitename)) {
+    return;
+  }
 
   // Gets some options or sets defaults
   $destination = drush_get_option('destination');
@@ -263,7 +267,9 @@ function drush_terminatur_files($sitename = FALSE) {
   if (!$sitename) {
     $sitename = drush_get_option('sitename');
   }
-  $site = _terminatur_get_site($sitename);
+  if (!$site = _terminatur_get_site($sitename)) {
+    return;
+  }
 
   // Gets some options or sets defaults
   $destination = drush_get_option('destination');
@@ -287,7 +293,9 @@ function drush_terminatur_pullsite($sitename = FALSE) {
   if (!$sitename) {
     $sitename = drush_get_option('sitename');
   }
-  $site = _terminatur_get_site($sitename);
+  if (!$site = _terminatur_get_site($sitename)) {
+    return;
+  }
 
   // Need MySQL
   if ($site['terminatur']['database']['method'] != 'mysql') {
@@ -367,7 +375,9 @@ function drush_terminatur_crushsite($sitename = FALSE) {
   if (!$sitename) {
     $sitename = drush_get_option('sitename');
   }
-  $site = _terminatur_get_site($sitename, TRUE);
+  if (!$site = _terminatur_get_site($sitename, TRUE)) {
+    return false;
+  }
 
   // Do a different check here because a local site does not have a DB method set
   if (!drush_shell_exec('mysql --version')) {

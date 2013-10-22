@@ -13,7 +13,7 @@ function _terminatur_get_site($sitename, $allow_local = FALSE) {
   $site = isset($sites[$sitename]) ? $sites[$sitename] : FALSE;
   if (!$site && !$allow_local) {
     drush_log(dt("Not a valid Pantheon site."), 'error');
-    return;
+    return FALSE;
   }
   if ($site) {
     return $site;
@@ -21,7 +21,6 @@ function _terminatur_get_site($sitename, $allow_local = FALSE) {
   if ($allow_local) {
     return _terminatur_aliases_get_local_site($sitename);
   }
-  drush_log(dt("Not a valid a valid Pantheon or local site."), 'error');
 }
 
 /**
@@ -34,6 +33,10 @@ function _terminatur_aliases_get_local_site($sitename) {
     require TERMINATUR_LOCAL_ALIASES_FILE;
     if (isset($aliases[$sitename])) {
       return $aliases[$sitename];
+    }
+    else {
+      drush_log(dt("Not a valid local site."), 'error');
+      return FALSE;
     }
   }
   return FALSE;
