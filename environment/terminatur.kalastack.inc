@@ -127,7 +127,7 @@ function _terminatur_pullsite_kalastack($site) {
     }
 
     // Download the thumbnail
-    _terminatur_download_image_kalastack($site['thumbnail'], TERMINATUR_DEFAULT_WEBROOT . '.images/' . $site['machine-name'] . '.png');
+    _terminatur_download_image_kalastack($site['thumbnail'], '/etc/kalastack/images/' . $site['machine-name'] . '.png');
   }
 }
 
