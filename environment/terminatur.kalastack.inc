@@ -161,7 +161,7 @@ function _terminatur_alias_add_kalastack($site, $destination) {
     // if has Thumbnail
     // @todo: Want to make this kalastack specific at some point
     if (isset($site['thumbnail'])) {
-      $aliases[$site['machine-name'] . TERMINATUR_LOCAL_SUFFIX]['thumbnail'] = 'http://root.kala/.images/' . $site['machine-name'] . '.png';
+      $aliases[$site['machine-name'] . TERMINATUR_LOCAL_SUFFIX]['thumbnail'] = 'http://images.kala/' . $site['machine-name'] . '.png';
     }
   }
 
