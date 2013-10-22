@@ -29,7 +29,10 @@ function _terminatur_code_git($site, $destination) {
     else {
       // Do some checking so we don't delete the whole webroot!
       if (isset($site['machine-name'])) {
-        drush_shell_exec("rm -rf " . $destination . $site['machine-name']);
+        if (!drush_shell_exec("rm -rf " . $destination . $site['machine-name'])) {
+          drush_log(dt("Could not remove the existing codebase. Please remove manually and then try again."), 'error');
+          return FALSE;
+        }
       }
     }
   }
