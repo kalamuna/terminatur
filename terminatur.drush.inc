@@ -210,7 +210,11 @@ function drush_terminatur_code($sitename = FALSE) {
 
   // Build code callback function
   $get_code_func = '_terminatur_code_' . $site['terminatur']['code']['method'];
-  $get_code_func($site, $destination);
+  if (!$get_code_func($site, $destination)) {
+    return;
+  }
+
+  drush_log(dt("Code downloaded."), 'success');
 }
 
 /**

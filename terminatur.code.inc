@@ -18,8 +18,11 @@ function _terminatur_code_git($site, $destination) {
 
     // Codebase does exist, just refresh that code
     if ($gitconfig_string == "url = " . $site['terminatur']['code']['git-connect']) {
-      drush_shell_exec("git --git-dir=" . $destination . $site['machine-name'] . "/.git pull");
-      return;
+      if (!drush_shell_exec("git --git-dir=" . $destination . $site['machine-name'] . "/.git pull")) {
+        drush_log(dt("Could not git pull your code."), 'error');
+        return FALSE;
+      }
+      return TRUE;
     }
     else {
       // Do some checking so we don't delete the whole webroot!
@@ -30,7 +33,11 @@ function _terminatur_code_git($site, $destination) {
   }
   // Git clone for the first time
   mkdir($destination . $site['machine-name'], 0777, TRUE);
-  drush_shell_exec("cd " . $destination . " && git clone " . $site['terminatur']['code']['git-connect'] . " " . $site['machine-name']);
+  if (!drush_shell_exec("cd " . $destination . " && git clone " . $site['terminatur']['code']['git-connect'] . " " . $site['machine-name'])) {
+    drush_log(dt("Could not clone code from the remote repository."), 'error');
+    return FALSE;
+  }
+  return TRUE;
 }
 
 /**
@@ -39,7 +46,7 @@ function _terminatur_code_git($site, $destination) {
 function _terminatur_code_download($site, $destination) {
   // Get the download link data
   if (!$site['terminatur']['code']['download-data'] = _terminatur_get_download_link($site, 'code')) {
-    return;
+    return FALSE;
   }
   // Parse download data and begin the download
   $result = $site['terminatur']['code']['download-data'];
@@ -52,9 +59,11 @@ function _terminatur_code_download($site, $destination) {
     drush_tarball_extract($path);
     drush_shell_exec("rm -rf " . $destination . $site['machine-name']);
     rename(TERMINATUR_TMP_DIR . $dir, $destination . $site['machine-name']);
+    return TRUE;
   }
   else {
     drush_log(dt("Download failed."), 'error');
+    return FALSE;
   }
 }
 
