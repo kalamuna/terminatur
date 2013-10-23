@@ -68,9 +68,10 @@ function _terminatur_data_pipe($site) {
     }
     // Unreap my heart: make sure DB server is awake
     drush_invoke_process("@pantheon." . $site['machine-name'] . "." . $site['env'], 'core-status', array(), array());
-    $command_args = array("@pantheon." . $site['machine-name'] . "." . $site['env'], "@" . TERMINATUR_LOCAL_PREFIX . "." . $site['machine-name'] . TERMINATUR_LOCAL_SUFFIX);
-    $command_options = array('disable' => 'pantheon_apachesolr', 'ssh-options' => $site['ssh-options']);
-    drush_invoke_process('', 'sql-sync-pipe', $command_args, $command_options);
+    // Force it
+    drush_set_context('DRUSH_AFFIRMATIVE', TRUE);
+    drush_set_option('ssh-options', $site['ssh-options']);
+    drush_sql_sync_pipe("@pantheon." . $site['machine-name'] . "." . $site['env'], "@" . TERMINATUR_LOCAL_PREFIX . "." . $site['machine-name'] . TERMINATUR_LOCAL_SUFFIX);
     return TRUE;
   }
   else {
