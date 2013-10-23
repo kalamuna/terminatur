@@ -19,7 +19,7 @@ function _terminatur_code_git($site, $destination) {
     // Codebase does exist, just refresh that code
     if ($gitconfig_string == "url = " . $site['terminatur']['code']['git-connect']) {
       // We need to use this environmental variable bullshit to ensure we actually get relevant output
-      if (!drush_shell_exec("GIT_SSH='" . $site['terminatur']['code']['git-ssh'] . "' && git --git-dir=" . $destination . $site['machine-name'] . "/.git pull")) {
+      if (!drush_shell_exec("git --git-dir=" . $destination . $site['machine-name'] . "/.git pull")) {
         drush_log(dt("Could not git pull your code. Check that your SSH key is loaded."), 'error');
         return FALSE;
       }
@@ -38,7 +38,7 @@ function _terminatur_code_git($site, $destination) {
   // Git clone for the first time
   mkdir($destination . $site['machine-name'], 0777, TRUE);
   // We need to use this environmental variable bullshit to ensure we actually get relevant output
-  if (!drush_shell_exec("GIT_SSH='" . $site['terminatur']['code']['git-ssh'] . "' cd " . $destination . " && git clone " . $site['terminatur']['code']['git-connect'] . " " . $site['machine-name'])) {
+  if (!drush_shell_exec("cd " . $destination . " && git clone " . $site['terminatur']['code']['git-connect'] . " " . $site['machine-name'])) {
     drush_log(dt("Could not clone code from the remote repository. Check that your SSH key is loaded."), 'error');
     return FALSE;
   }

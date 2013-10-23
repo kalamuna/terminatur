@@ -240,7 +240,6 @@ function _terminatur_code_options(&$aliases) {
     switch ($method) {
       case 'git':
         $aliases[$key]['terminatur']['code']['git-connect'] = "ssh://codeserver." . $aliases[$key]['env'] . "." . $aliases[$key]['uuid'] . "@codeserver." . $aliases[$key]['env'] . "." . $aliases[$key]['uuid'] . ".drush.in:2222/~/repository.git";
-        $aliases[$key]['terminatur']['code']['git-ssh'] = "/usr/bin/ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=publickey";
         break;
       case 'download':
         $bucket = terminus_latest_bucket($aliases[$key]['uuid'], $aliases[$key]['env'], 'code');
@@ -286,7 +285,7 @@ function _terminatur_file_options(&$aliases) {
       case 'rsync':
         $rsync = array(
           'options' => '-rlztv --ipv4',
-          'ssh' => addcslashes("-e 'ssh " . $aliases[$key]['ssh-options'] . " -o PreferredAuthentications=publickey'", "'"),
+          'ssh' => addcslashes("-e 'ssh " . $aliases[$key]['ssh-options'] . "'", "'"),
           'excludes' => addcslashes("--exclude 'js' --exclude 'css' --exclude 'ctools' --exclude 'imagecache' --exclude 'xmlsitemap' --exclude 'backup_migrate' --exclude 'styles' --exclude 'less'", "'"),
           'remote-files' => $aliases[$key]['remote-user'] . "@" . $aliases[$key]['remote-host'] . ":files",
         );
