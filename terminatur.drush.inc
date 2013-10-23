@@ -354,6 +354,10 @@ function drush_terminatur_pullsite($sitename = FALSE) {
   if ($files) {
     drush_invoke_process('', 'terminatur-files', $command_args, array('destination' => $destination));
   }
+  else {
+    // We need these directories set up for cache clear!
+    _terminatur_files_set_up_dirs($site, $destination);
+  }
 
   // Build vhost add callback function
   $get_vhost_add_func = '_terminatur_vhost_add_' . TERMINATUR_ENV;
