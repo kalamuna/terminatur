@@ -455,10 +455,11 @@ function drush_terminatur_newsite($sitename = FALSE) {
   if (!$sitename) {
     $sitename = drush_get_option('sitename');
   }
-  if (!ctype_lower($sitename)) {
-    drush_log(dt("New sitename can only be lowercase letters."), 'error');
+  if (preg_match('/[^a-z0-9-]/', $sitename)) {
+    drush_log(dt("New sitename can only be lowercase letters, numbers and hyphens."), 'error');
     return;
   }
+
   // Do a different check here because a local site does not have a DB method set
   if (!drush_shell_exec('mysql --version')) {
     drush_log(dt("You need at least MySQL for this to work."), 'error');
