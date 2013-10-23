@@ -285,7 +285,11 @@ function drush_terminatur_files($sitename = FALSE) {
 
   // Build files callback function
   $get_files_func = '_terminatur_files_' . $site['terminatur']['files']['method'];
-  $get_files_func($site, $destination);
+  if (!$get_files_func($site, $destination)) {
+    return;
+  }
+
+  drush_log(dt("Files downloaded."), 'success');
 }
 
 /**
