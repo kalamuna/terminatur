@@ -286,7 +286,7 @@ function _terminatur_file_options(&$aliases) {
       case 'rsync':
         $rsync = array(
           'options' => '-rlztv --ipv4',
-          'ssh' => addcslashes("-e 'ssh " . $aliases[$key]['ssh-options'] . "/usr/bin/ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=publickey'", "'"),
+          'ssh' => addcslashes("-e 'ssh " . $aliases[$key]['ssh-options'] . " -o PreferredAuthentications=publickey'", "'"),
           'excludes' => addcslashes("--exclude 'js' --exclude 'css' --exclude 'ctools' --exclude 'imagecache' --exclude 'xmlsitemap' --exclude 'backup_migrate' --exclude 'styles' --exclude 'less'", "'"),
           'remote-files' => $aliases[$key]['remote-user'] . "@" . $aliases[$key]['remote-host'] . ":files",
         );
