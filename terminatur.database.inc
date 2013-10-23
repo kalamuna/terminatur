@@ -38,7 +38,7 @@ function _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_hos
 
   // Get the latest archive
   if (!$site['terminatur']['database']['download-data'] = _terminatur_get_download_link($site, 'database')) {
-    return;
+    _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_host, $db_port, TRUE);
   }
 
   // Parse download data and begin the download

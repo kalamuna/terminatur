@@ -306,7 +306,9 @@ function _terminatur_file_options(&$aliases) {
 function _terminatur_get_download_link($site, $element = 'code') {
   // Refresh download link
   if ($site['terminatur'][$element]['download-bucket'] == 'NONE') {
-    drush_log(dt('You need to make a backup on Pantheon first before you can get stuff this way.'), 'error');
+    if ($element !== 'database') {
+      drush_log(dt('You need to make a backup on Pantheon first before you can get stuff this way.'), 'error');
+    }
     return FALSE;
   }
   // Make sure we are online with pantheon
