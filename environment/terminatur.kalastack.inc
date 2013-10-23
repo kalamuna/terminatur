@@ -20,6 +20,7 @@ define('TERMINATUR_DEFAULT_DB_PORT', '3306');
 
 define('TERMINATUR_DEFAULT_DEFAULT_DIR', '/sites/default/');
 define('TERMINATUR_DEFAULT_FILES_DIR', 'files');
+define('TERMINATUR_DEFAULT_FILES_PRIVATE_DIR', 'files/private');
 define('TERMINATUR_SETTINGS_CONDITIONAL', "if (isset(\$_SERVER['KALABOX']) &&  \$_SERVER['KALABOX'] === 'on') { \n");
 
 define('TERMINATUR_VHOST_AVAIL_DIR', '/etc/kalastack/vhosts/sites-available/');

@@ -70,6 +70,12 @@ function _terminatur_files_set_up_dirs($site, $destination) {
   if (!is_writable(_terminatur_files_download_location($site, $destination) . TERMINATUR_DEFAULT_DEFAULT_DIR . TERMINATUR_DEFAULT_FILES_DIR)) {
     chmod(_terminatur_files_download_location($site, $destination) . TERMINATUR_DEFAULT_DEFAULT_DIR . TERMINATUR_DEFAULT_FILES_DIR, 0777);
   }
+  if (!is_dir(_terminatur_files_download_location($site, $destination) . TERMINATUR_DEFAULT_DEFAULT_DIR . TERMINATUR_DEFAULT_FILES_PRIVATE_DIR)) {
+    mkdir(_terminatur_files_download_location($site, $destination) . TERMINATUR_DEFAULT_DEFAULT_DIR . TERMINATUR_DEFAULT_FILES_PRIVATE_DIR, 0777, TRUE);
+  }
+  if (!is_writable(_terminatur_files_download_location($site, $destination) . TERMINATUR_DEFAULT_DEFAULT_DIR . TERMINATUR_DEFAULT_FILES_PRIVATE_DIR)) {
+    chmod(_terminatur_files_download_location($site, $destination) . TERMINATUR_DEFAULT_DEFAULT_DIR . TERMINATUR_DEFAULT_FILES_PRIVATE_DIR, 0777);
+  }
 }
 
 /**
