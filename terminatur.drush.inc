@@ -339,20 +339,16 @@ function drush_terminatur_pullsite($sitename = FALSE) {
   $command_args = array($site['machine-name'] . "." . $site['env']);
 
   // Code & Data
-  drush_invoke_process('', 'terminatur-code', $command_args, array('destination' => $destination));
-  $data_options = array(
-    'destination' => $destination,
-    'user' => $db_user,
-    'password' => $db_pass,
-    'host' => $db_host,
-    'port' => $db_port,
-    'pipe' => $pipe,
-  );
-  drush_invoke_process('', 'terminatur-data', $command_args, $data_options);
+  $get_code_func = '_terminatur_code_' . $site['terminatur']['code']['method'];
+  $get_code_func($site, $destination);
+  // Build data callback function
+  $get_data_func = '_terminatur_data_' . $site['terminatur']['database']['method'];
+  $get_data_func($site, $destination, $db_user, $db_pass, $db_host, $db_port, $pipe);
 
   // If applicable, files
   if ($files) {
-    drush_invoke_process('', 'terminatur-files', $command_args, array('destination' => $destination));
+    $get_files_func = '_terminatur_files_' . $site['terminatur']['files']['method'];
+    $get_files_func($site, $destination);
   }
   else {
     // We need these directories set up for cache clear!
