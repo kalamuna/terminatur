@@ -14,65 +14,34 @@ function _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_hos
   $databases = array();
   if (!$databases = _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port)) {
     drush_log(dt("You have entered incorrect MySQL credentials."), 'error');
-    return;
+    return FALSE;
   }
 
   // Try to get the most up to date data with sql-sync-pipe
   if ($pipe) {
-    if (function_exists('drush_sql_sync_pipe')) {
-      if (!$local_site = _terminatur_aliases_get_local_site($site['machine-name'] . TERMINATUR_LOCAL_SUFFIX)) {
-        drush_log(dt("You need to have a local site set up to use pipe."), 'error');
-        return;
-      }
-      // Unreap my heart: make sure DB server is awake
-      drush_invoke_process("@pantheon." . $site['machine-name'] . "." . $site['env'], 'core-status', array(), array());
-      $command_args = array("@pantheon." . $site['machine-name'] . "." . $site['env'], "@" . TERMINATUR_LOCAL_PREFIX . "." . $site['machine-name'] . TERMINATUR_LOCAL_SUFFIX);
-      $command_options = array('disable' => 'pantheon_apachesolr', 'ssh-options' => $site['ssh-options'], 'y', 'progress');
-      drush_invoke_process('', 'sql-sync-pipe', $command_args, $command_options);
-    }
-    else {
-      drush_log(dt("You need to have sql-sync-pipe installed to use this command."), 'error');
-      return;
-    }
-  }
-
-  // Get the latest archive
-  if (!$site['terminatur']['database']['download-data'] = _terminatur_get_download_link($site, 'database')) {
-    _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_host, $db_port, TRUE);
+    return _terminatur_data_pipe($site);
   }
 
   // Parse download data and begin the download
-  $fail = FALSE;
-  $result = $site['terminatur']['database']['download-data'];
-  $data = json_decode($result['json']);
-  $filename = strstr(basename($data->url), '?', '_');
-  $dir = strstr($filename, '.', true);
-  $cache_duration = 86400*365;
-  $path = _drush_download_file($data->url, TERMINATUR_TMP_DIR . $filename, $cache_duration);
-  if (!$path && !drush_get_context('DRUSH_SIMULATE')) {
-    drush_log(dt("Download failed. You may want to run 'drush ta' to refresh your download links."), 'error');
-    $fail = TRUE;
+  if (!_terminatur_data_download($site)) {
+    return _terminatur_data_pipe($site);
   }
-
+  else {
   // Import downloaded data
-  if (!drush_shell_exec("gunzip " . $path . " -f && " . $databases['default']['default']['connect'] . " < " . str_replace('sql.gz', 'sql', $path))) {
-    drush_log(dt("Import failed. Make sure you have gunzip installed."), 'error');
-    $fail = TRUE;
-  }
-
-  // Might as well try pipe on fail
-  if ($fail) {
-    _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_host, $db_port, TRUE);
+    if (!drush_shell_exec("gunzip " . $path . " -f && " . $databases['default']['default']['connect'] . " < " . str_replace('sql.gz', 'sql', $path))) {
+      drush_log(dt("Import failed. Make sure you have gunzip installed."), 'error');
+      return _terminatur_data_pipe($site);
+    }
   }
 }
 
 /**
  * Downloads a dump of the Pantheon database
  */
-function _terminatur_data_download($site, $destination, $db_user, $db_pass, $db_host, $db_port, $pipe = FALSE) {
+function _terminatur_data_download($site) {
   // Get the download link data
   if (!$site['terminatur']['database']['download-data'] = _terminatur_get_download_link($site, 'database')) {
-    return;
+    return FALSE;
   }
   // Parse download data and begin the download
   $result = $site['terminatur']['database']['download-data'];
@@ -83,6 +52,30 @@ function _terminatur_data_download($site, $destination, $db_user, $db_pass, $db_
   $path = _drush_download_file($data->url, getenv('HOME') .  DIRECTORY_SEPARATOR . $filename, $cache_duration);
   if (!$path && !drush_get_context('DRUSH_SIMULATE')) {
     drush_log(dt("Download failed."), 'error');
+    return FALSE;
+  }
+  return TRUE;
+}
+
+/**
+ * Downloads a dump of the Pantheon database
+ */
+function _terminatur_data_pipe($site) {
+  if (function_exists('drush_sql_sync_pipe')) {
+    if (!$local_site = _terminatur_aliases_get_local_site($site['machine-name'] . TERMINATUR_LOCAL_SUFFIX)) {
+      drush_log(dt("You need to have a local site set up to use pipe."), 'error');
+      return FALSE;
+    }
+    // Unreap my heart: make sure DB server is awake
+    drush_invoke_process("@pantheon." . $site['machine-name'] . "." . $site['env'], 'core-status', array(), array());
+    $command_args = array("@pantheon." . $site['machine-name'] . "." . $site['env'], "@" . TERMINATUR_LOCAL_PREFIX . "." . $site['machine-name'] . TERMINATUR_LOCAL_SUFFIX);
+    $command_options = array('disable' => 'pantheon_apachesolr', 'ssh-options' => $site['ssh-options']);
+    drush_invoke_process('', 'sql-sync-pipe', $command_args, $command_options);
+    return TRUE;
+  }
+  else {
+    drush_log(dt("You need to have sql-sync-pipe installed to use this command."), 'error');
+    return FALSE;
   }
 }
 

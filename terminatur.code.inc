@@ -20,7 +20,7 @@ function _terminatur_code_git($site, $destination) {
     if ($gitconfig_string == "url = " . $site['terminatur']['code']['git-connect']) {
       // We need to use this environmental variable bullshit to ensure we actually get relevant output
       if (!drush_shell_exec("git --git-dir=" . $destination . $site['machine-name'] . "/.git pull")) {
-        drush_log(dt("Could not git pull your code. Check that your SSH key is loaded."), 'error');
+        drush_log(dt("Could not git pull your code. Check that your SSH key is loaded and the codeserver is reachable."), 'error');
         return FALSE;
       }
       return TRUE;
@@ -39,7 +39,7 @@ function _terminatur_code_git($site, $destination) {
   mkdir($destination . $site['machine-name'], 0777, TRUE);
   // We need to use this environmental variable bullshit to ensure we actually get relevant output
   if (!drush_shell_exec("cd " . $destination . " && git clone " . $site['terminatur']['code']['git-connect'] . " " . $site['machine-name'])) {
-    drush_log(dt("Could not clone code from the remote repository. Check that your SSH key is loaded."), 'error');
+    drush_log(dt("Could not clone code from the remote repository. Check that your SSH key is loaded and the codeserver is reachable."), 'error');
     return FALSE;
   }
   return TRUE;

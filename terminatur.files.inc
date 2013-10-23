@@ -14,7 +14,7 @@ function _terminatur_files_rsync($site, $destination) {
   // Build files directories as appropriate
   _terminatur_files_set_up_dirs($site, $destination);
   if (!drush_shell_exec("rsync " . $site['terminatur']['files']['rsync']['options'] . " " . $site['terminatur']['files']['rsync']['ssh'] . " " . $site['terminatur']['files']['rsync']['excludes'] . " " . $site['terminatur']['files']['rsync']['remote-files'] . " " . _terminatur_files_download_location($site, $destination) . TERMINATUR_DEFAULT_DEFAULT_DIR)) {
-     drush_log(dt("RYSNC"), 'error');
+     drush_log(dt("Could not sync your files. Check your SSH keys and verify the files server is reachable."), 'error');
   }
 }
 

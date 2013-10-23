@@ -270,6 +270,7 @@ function _terminatur_data_options(&$aliases) {
 
     $bucket = terminus_latest_bucket($aliases[$key]['uuid'], $aliases[$key]['env'], 'database');
     $aliases[$key]['terminatur']['database']['download-bucket'] = $bucket ? $bucket : 'NONE';
+
   }
 }
 
@@ -304,7 +305,8 @@ function _terminatur_file_options(&$aliases) {
  */
 function _terminatur_get_download_link($site, $element = 'code') {
   // Refresh download link
-  if ($site['terminatur'][$element]['download-bucket'] == 'NONE') {
+  // @todo: Don't use import buckets for now until fixed on pantheon end
+  if ($site['terminatur'][$element]['download-bucket'] == 'NONE' || strpos($site['terminatur'][$element]['download-bucket'], 'import') !== FALSE) {
     if ($element !== 'database') {
       drush_log(dt('You need to make a backup on Pantheon first before you can get stuff this way.'), 'error');
     }
