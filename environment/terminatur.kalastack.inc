@@ -122,16 +122,8 @@ function _terminatur_host_remove_kalastack($hostname) {
  * Additional tasks to run on pullsite
  */
 function _terminatur_pullsite_kalastack($site) {
-  // Grab thumbnail image if on Kalabox
-  if (isset($site['thumbnail'])) {
-    // Check for and create an images directory if applicable
-    if (!is_dir(TERMINATUR_DEFAULT_WEBROOT . '.images')) {
-      mkdir(TERMINATUR_DEFAULT_WEBROOT . '.images');
-    }
-
-    // Download the thumbnail
-    _terminatur_download_image_kalastack($site['uuid'], '/etc/kalastack/images/' . $site['machine-name'] . '.png');
-  }
+  // Download the thumbnail
+  _terminatur_download_image_kalastack($site['uuid'], '/etc/kalastack/images/' . $site['machine-name'] . '.png');
 }
 
 /**
