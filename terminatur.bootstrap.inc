@@ -350,9 +350,8 @@ function _terminatur_get_download_link($site, $element = 'code') {
   // @todo: Don't use import buckets for now until fixed on pantheon end
   if ($site['terminatur'][$element]['download-bucket'] == 'NONE' || strpos($site['terminatur'][$element]['download-bucket'], 'import') !== FALSE) {
     if ($element !== 'database') {
-      drush_log(dt('You need to make a backup on Pantheon first before you can get stuff this way.'), 'error');
+      return drush_set_error('TERMINATUR_ERROR', 'You need to make a backup on Pantheon first before you can get stuff this way.');
     }
-    return FALSE;
   }
   // Make sure we are online with pantheon
   $session_data = _terminatur_get_session();

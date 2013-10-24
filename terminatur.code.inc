@@ -20,8 +20,7 @@ function _terminatur_code_git($site, $destination) {
     if ($gitconfig_string == "url = " . $site['terminatur']['code']['git-connect']) {
       // We need to use this environmental variable bullshit to ensure we actually get relevant output
       if (!drush_shell_exec("git --git-dir=" . $destination . $site['machine-name'] . "/.git pull")) {
-        drush_log(dt("Could not git pull your code. Check that your SSH key is loaded and the codeserver is reachable."), 'error');
-        return FALSE;
+        return drush_set_error('TERMINATUR_ERROR', 'Could not git pull your code. Check that your SSH key is loaded and the codeserver is reachable.');
       }
       return TRUE;
     }
@@ -29,8 +28,7 @@ function _terminatur_code_git($site, $destination) {
       // Do some checking so we don't delete the whole webroot!
       if (isset($site['machine-name'])) {
         if (!drush_shell_exec("rm -rf " . $destination . $site['machine-name'])) {
-          drush_log(dt("Could not remove the existing codebase. Please remove manually and then try again."), 'error');
-          return FALSE;
+          return drush_set_error('TERMINATUR_ERROR', 'Could not remove the existing codebase. Please remove manually and then try again.');
         }
       }
     }
@@ -39,8 +37,7 @@ function _terminatur_code_git($site, $destination) {
   mkdir($destination . $site['machine-name'], 0777, TRUE);
   // We need to use this environmental variable bullshit to ensure we actually get relevant output
   if (!drush_shell_exec("cd " . $destination . " && git clone " . $site['terminatur']['code']['git-connect'] . " " . $site['machine-name'])) {
-    drush_log(dt("Could not clone code from the remote repository. Check that your SSH key is loaded and the codeserver is reachable."), 'error');
-    return FALSE;
+    return drush_set_error('TERMINATUR_ERROR', 'Could not clone code from the remote repository. Check that your SSH key is loaded and the codeserver is reachable.');
   }
   return TRUE;
 }
@@ -67,8 +64,7 @@ function _terminatur_code_download($site, $destination) {
     return TRUE;
   }
   else {
-    drush_log(dt("Download failed."), 'error');
-    return FALSE;
+    return drush_set_error('TERMINATUR_ERROR', 'Download failed.');
   }
 }
 
@@ -89,8 +85,7 @@ function _terminatur_code_remove($site, $destination) {
     // Remove the webroot and everything in it.
     // Need to run shell command because PHP isnt great at complete destruction
     if (!drush_shell_exec("rm -rf " . $web_root)) {
-      drush_log(dt('Could not remove webroot. Please remove manually.'), 'error');
-      return FALSE;
+      return drush_set_error('TERMINATUR_ERROR', 'Could not remove webroot. Please remove manually.');
     }
   }
   return TRUE;

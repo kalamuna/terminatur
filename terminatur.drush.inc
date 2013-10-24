@@ -311,8 +311,7 @@ function drush_terminatur_pullsite($sitename = FALSE) {
 
   // Need MySQL
   if ($site['terminatur']['database']['method'] != 'mysql') {
-    drush_log(dt("You need at least MySQL for this to work."), 'error');
-    return;
+    return drush_set_error('TERMINATUR_ERROR', 'You need at least MySQL for this to work.');
   }
 
   // Gets some options or sets defaults
@@ -397,8 +396,7 @@ function drush_terminatur_crushsite($sitename = FALSE) {
 
   // Do a different check here because a local site does not have a DB method set
   if (!drush_shell_exec('mysql --version')) {
-    drush_log(dt("You need at least MySQL for this to work."), 'error');
-    return;
+    return drush_set_error('TERMINATUR_ERROR', 'You need at least MySQL for this to work.');
   }
 
   // Gets some options or sets defaults
@@ -466,14 +464,12 @@ function drush_terminatur_newsite($sitename = FALSE) {
     $sitename = drush_get_option('sitename');
   }
   if (preg_match('/[^a-z0-9-]/', $sitename)) {
-    drush_log(dt("New sitename can only be lowercase letters, numbers and hyphens."), 'error');
-    return;
+    return drush_set_error('TERMINATUR_ERROR', 'New sitename can only be lowercase letters, numbers and hyphens.');
   }
 
   // Do a different check here because a local site does not have a DB method set
   if (!drush_shell_exec('mysql --version')) {
-    drush_log(dt("You need at least MySQL for this to work."), 'error');
-    return;
+    return drush_set_error('TERMINATUR_ERROR', 'You need at least MySQL for this to work.');
   }
 
   // Gets some options or sets defaults
@@ -516,8 +512,7 @@ function drush_terminatur_newsite($sitename = FALSE) {
   }
   // This check has to happen here because we need $destination
   if (is_dir($destination . $sitename)) {
-    drush_log(dt("Already a site there, try another name."), 'error');
-    return;
+    return drush_set_error('TERMINATUR_ERROR', 'Already a site there, try another name.');
   }
 
   drush_log(dt("Building new site..."), 'warning');
@@ -530,8 +525,7 @@ function drush_terminatur_newsite($sitename = FALSE) {
   $site = array();
   $site['machine-name'] = $sitename;
   if (!$databases = _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port)) {
-    drush_log(dt("You have entered incorrect MySQL credentials."), 'error');
-    return;
+    return drush_set_error('TERMINATUR_ERROR', 'You have entered incorrect MySQL credentials.');
   }
   // Download the profile
   // Set download command arguments
@@ -543,7 +537,7 @@ function drush_terminatur_newsite($sitename = FALSE) {
     'y' => TRUE,
   );
   if (!drush_invoke_process('', 'pm-download', $dl_args, $dl_options)) {
-    drush_log(dt("Could not download chosen profile."), 'error');
+    return drush_set_error('TERMINATUR_ERROR', 'Could not download chosen profile.');
   }
 
   // Install options
@@ -556,8 +550,7 @@ function drush_terminatur_newsite($sitename = FALSE) {
 
   // Update the new settings file
   if (!$databases = _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port)) {
-    drush_log(dt("You have entered incorrect MySQL credentials."), 'error');
-    return;
+    return drush_set_error('TERMINATUR_ERROR', 'You have entered incorrect MySQL credentials.');
   }
 
   // Now that we have an alias entry we should be able to grab the site array
@@ -594,8 +587,7 @@ function drush_terminatur_aliases() {
 function drush_terminatur_set_git() {
   // Do a different check here because a local site does not have a DB method set
   if (!drush_shell_exec('git --version')) {
-    drush_log(dt("You need git for this shit."), 'error');
-    return;
+    return drush_set_error('TERMINATUR_ERROR', 'You need git for this shit.');
   }
   $user = array();
   $user = _terminatur_get_user();
