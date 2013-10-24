@@ -339,20 +339,24 @@ function drush_terminatur_pullsite($sitename = FALSE) {
   $pipe = drush_get_option('pipe');
   $files = drush_get_option('files');
 
-  // Set command arguments
-  $command_args = array($site['machine-name'] . "." . $site['env']);
+// Build callback functions
+  $get_data_func = '_terminatur_data_' . $site['terminatur']['database']['method'];
+  $get_code_func = '_terminatur_code_' . $site['terminatur']['code']['method'];
 
   // Code & Data
-  $get_code_func = '_terminatur_code_' . $site['terminatur']['code']['method'];
-  $get_code_func($site, $destination);
-  // Build data callback function
-  $get_data_func = '_terminatur_data_' . $site['terminatur']['database']['method'];
-  $get_data_func($site, $destination, $db_user, $db_pass, $db_host, $db_port, $pipe);
+  if (!$get_code_func($site, $destination)) {
+    return;
+  }
+  if (!$get_data_func($site, $destination, $db_user, $db_pass, $db_host, $db_port, $pipe)) {
+    return;
+  }
 
   // If applicable, files
   if ($files) {
     $get_files_func = '_terminatur_files_' . $site['terminatur']['files']['method'];
-    $get_files_func($site, $destination);
+    if (!$get_files_func($site, $destination)) {
+      return;
+    }
   }
   else {
     // We need these directories set up for cache clear!
