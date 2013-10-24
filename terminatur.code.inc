@@ -88,6 +88,10 @@ function _terminatur_code_remove($site, $destination) {
     }
     // Remove the webroot and everything in it.
     // Need to run shell command because PHP isnt great at complete destruction
-    drush_shell_exec("rm -rf " . $web_root);
+    if (!drush_shell_exec("rm -rf " . $web_root)) {
+      drush_log(dt('Could not remove webroot. Please remove manually.'), 'error');
+      return FALSE;
+    }
   }
+  return TRUE;
 }

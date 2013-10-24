@@ -179,9 +179,10 @@ function _terminatur_data_remove($site, $destination, $db_user, $db_pass, $db_ho
   $databases = array();
   if (!$databases = _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port)) {
     drush_log(dt("You have entered incorrect MySQL credentials."), 'error');
-    return;
+    return FALSE;
   }
   $mysqli = new mysqli($databases['default']['default']['host'], $databases['default']['default']['username'], $databases['default']['default']['password'], NULL, (int) $databases['default']['default']['port']);
   $mysqli->query('DROP DATABASE ' . $databases['default']['default']['database']);
   $mysqli->close();
+  return TRUE:
 }

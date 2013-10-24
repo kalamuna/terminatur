@@ -90,7 +90,11 @@ function _terminatur_files_remove($site, $destination) {
     $files_dir = _terminatur_files_download_location($site, $destination) . TERMINATUR_DEFAULT_DEFAULT_DIR . TERMINATUR_DEFAULT_FILES_DIR;
     // Remove the files dir and everything in it.
     // Need to run shell command because PHP isnt great at complete destruction
-    drush_shell_exec("rm -rf " . $files_dir);
+    if (!drush_shell_exec("rm -rf " . $files_dir)) {
+      drush_log(dt("Could not remove files. Please remove manually."), 'error');
+      return FALSE;
+    }
   }
+  return TRUE;
 }
 
