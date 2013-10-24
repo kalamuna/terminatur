@@ -14,7 +14,8 @@ function _terminatur_files_rsync($site, $destination) {
   // Build files directories as appropriate
   _terminatur_files_set_up_dirs($site, $destination);
   if (!drush_shell_exec("rsync " . $site['terminatur']['files']['rsync']['options'] . " " . $site['terminatur']['files']['rsync']['ssh'] . " " . $site['terminatur']['files']['rsync']['excludes'] . " " . $site['terminatur']['files']['rsync']['remote-files'] . " " . _terminatur_files_download_location($site, $destination) . TERMINATUR_DEFAULT_DEFAULT_DIR)) {
-     drush_log(dt("Could not sync your files. Check your SSH keys and verify the files server is reachable."), 'error');
+     drush_log(dt("Could not sync your files. Check your SSH keys and verify the file server is reachable."), 'error');
+     return FALSE;
   }
 }
 
@@ -24,7 +25,8 @@ function _terminatur_files_rsync($site, $destination) {
 function _terminatur_files_download($site, $destination) {
   // Get the download link data
   if (!$site['terminatur']['files']['download-data'] = _terminatur_get_download_link($site, 'files')) {
-    return;
+    drush_log(dt("You have no backups. Try making a backup first."), 'warning');
+    return FALSE;
   }
 
   // Build files directories as appropriate
@@ -44,6 +46,7 @@ function _terminatur_files_download($site, $destination) {
   }
   else {
     drush_log(dt("Download failed."), 'error');
+    return FALSE;
   }
 }
 
