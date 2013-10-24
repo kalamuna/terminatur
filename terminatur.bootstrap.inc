@@ -16,10 +16,7 @@ define('TERMINATUR_PANTHEON_ALIASES_FILE', TERMINATUR_DRUSH_DIR . 'pantheon.alia
  */
 function terminatur_bootstrap($force_refresh = FALSE) {
   // Load the Terminatur-generated ssh key if there's one.
-  if (file_exists(getenv('HOME') . '/.ssh/' . TERMINATUR_SSH_KEY)) {
-    drush_shell_exec('eval "$(ssh-agent)"');
-    drush_shell_exec('ssh-add ' . getenv('HOME') . '/.ssh/' . TERMINATUR_SSH_KEY);
-  }
+  _terminatur_load_default_key();
 
   // Make sure we have a key that'll work with Pantheon.
   $pantheon_keys = drush_cache_get('pantheon-keys', 'terminatur');
@@ -29,6 +26,7 @@ function terminatur_bootstrap($force_refresh = FALSE) {
     // If user doesn't have a SSH key set up with Pantheon, offer to make one for them.
     if (!$pantheon_keys) {
       $pantheon_keys = array(_terminatur_set_up_key());
+      _terminatur_load_default_key();
     }
     drush_cache_set('pantheon-keys', $pantheon_keys, 'terminatur');
   }
@@ -42,8 +40,9 @@ function terminatur_bootstrap($force_refresh = FALSE) {
       }
     }
     if (!$key_loaded) {
-      // If the key isn't loaded, remove it from the cache.
+      // If the key isn't loaded, remove it from the cache and start over.
       drush_cache_clear_all('pantheon-keys', 'terminatur');
+      terminatur_bootstrap($force_refresh);
     }
   }
 
@@ -185,6 +184,18 @@ function _terminatur_is_key_loaded($key) {
   $host_keys = drush_shell_exec_output();
   $host_keys = array_map('_terminatur_extract_key', $host_keys);
   return in_array(_terminatur_extract_key($key), $host_keys);
+}
+
+/**
+ * Loads the Terminatur-generated ssh key if it exists.
+ */
+function _terminatur_load_default_key() {
+  if (file_exists(getenv('HOME') . '/.ssh/' . TERMINATUR_SSH_KEY)) {
+    drush_shell_exec('eval "$(ssh-agent)"');
+    drush_shell_exec('ssh-add ' . getenv('HOME') . '/.ssh/' . TERMINATUR_SSH_KEY);
+    return TRUE;
+  }
+  return FALSE;
 }
 
 /**
