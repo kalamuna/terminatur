@@ -289,9 +289,7 @@ function drush_terminatur_files($sitename = FALSE) {
 
   // Build files callback function
   $get_files_func = '_terminatur_files_' . $site['terminatur']['files']['method'];
-  if (!$get_files_func($site, $destination)) {
-    return;
-  }
+  $get_files_func($site, $destination);
 
   drush_log(dt("Files downloaded."), 'success');
 }
@@ -353,9 +351,7 @@ function drush_terminatur_pullsite($sitename = FALSE) {
   // If applicable, files
   if ($files) {
     $get_files_func = '_terminatur_files_' . $site['terminatur']['files']['method'];
-    if (!$get_files_func($site, $destination)) {
-      return;
-    }
+    $get_files_func($site, $destination);
   }
   else {
     // We need these directories set up for cache clear!

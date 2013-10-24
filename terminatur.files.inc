@@ -12,10 +12,10 @@
  */
 function _terminatur_files_rsync($site, $destination) {
   // Build files directories as appropriate
+  // @todo some sort of error handling needs to happen here
+  // we arent doing it now because this is fucking up box builds.
   _terminatur_files_set_up_dirs($site, $destination);
-  if (!drush_shell_exec("rsync " . $site['terminatur']['files']['rsync']['options'] . " " . $site['terminatur']['files']['rsync']['ssh'] . " " . $site['terminatur']['files']['rsync']['excludes'] . " " . $site['terminatur']['files']['rsync']['remote-files'] . " " . _terminatur_files_download_location($site, $destination) . TERMINATUR_DEFAULT_DEFAULT_DIR)) {
-     return drush_set_error('TERMINATUR_ERROR', 'Could not sync your files. Check your SSH keys and verify the file server is reachable.');
-  }
+  drush_shell_exec("rsync " . $site['terminatur']['files']['rsync']['options'] . " " . $site['terminatur']['files']['rsync']['ssh'] . " " . $site['terminatur']['files']['rsync']['excludes'] . " " . $site['terminatur']['files']['rsync']['remote-files'] . " " . _terminatur_files_download_location($site, $destination) . TERMINATUR_DEFAULT_DEFAULT_DIR);
 }
 
 /**
