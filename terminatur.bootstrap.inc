@@ -223,9 +223,6 @@ function _terminatur_aliases_options(&$aliases) {
     // Build other relevant things
     $aliases[$key]['ssh-options'] .= ' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no';
     $aliases[$key]['built-from'] = $key;
-
-    // Include a path to a thumnbail
-    $aliases[$key]['thumbnail'] = 'https://s3.amazonaws.com/pantheon-screenshots/' . $aliases[$key]['uuid'] . '_live.png';
   }
 }
 

@@ -33,6 +33,8 @@ define('TERMINATUR_DEFAULT_PROFILE', 'panopoly');
 define('TERMINATUR_DEFAULT_SITENAME', 'My Awesome Site');
 define('TERMINATUR_DEFAULT_USERPASS', 'admin');
 
+define('SITE_THUMBNAIL_URL', 'https://s3.amazonaws.com/pantheon-screenshots/');
+
 // Set our own log printing function:
 drush_set_context('DRUSH_LOG_CALLBACK', 'terminatur_print_log');
 
@@ -128,7 +130,7 @@ function _terminatur_pullsite_kalastack($site) {
     }
 
     // Download the thumbnail
-    _terminatur_download_image_kalastack($site['thumbnail'], '/etc/kalastack/images/' . $site['machine-name'] . '.png');
+    _terminatur_download_image_kalastack($site['uuid'], '/etc/kalastack/images/' . $site['machine-name'] . '.png');
   }
 }
 
@@ -318,21 +320,31 @@ function terminatur_print_log($entry) {
 /*
  * Grabs a Pantheon thumbnail and saves it if on Kalabox
  */
-function _terminatur_download_image_kalastack($url, $destination) {
-  $ch = curl_init ($url);
-  curl_setopt($ch, CURLOPT_HEADER, 0);
-  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-  curl_setopt($ch, CURLOPT_BINARYTRANSFER, 1);
+function _terminatur_download_image_kalastack($uuid, $destination) {
+  $environments = array('live', 'test', 'dev');
 
-  $raw = curl_exec($ch);
-  curl_close ($ch);
   // Let's get up to date thumbs!
   if (file_exists($destination)) {
     unlink($destination);
   }
 
-  $fp = fopen($destination, 'x');
-  fwrite($fp, $raw);
-  fclose($fp);
-}
+  // Look for a thumbnail at each environment till we find one.
+  foreach ($environments as $environment) {
+    // Attempt download.
+    $ch = curl_init(SITE_THUMBNAIL_URL . $uuid . '_' . $environment . '.png');
+    curl_setopt($ch, CURLOPT_HEADER, 0);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_BINARYTRANSFER, 1);
+    $raw = curl_exec($ch);
+    // Write file if request was successful.
+    if (curl_getinfo($ch, CURLINFO_HTTP_CODE) == 200) {
+      $fp = fopen($destination, 'x');
+      fwrite($fp, $raw);
+      fclose($fp);
+      curl_close($ch);
+      break;
+    }
+    curl_close($ch);
+  }
 
+}
