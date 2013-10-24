@@ -529,7 +529,10 @@ function drush_terminatur_newsite($sitename = FALSE) {
   // We also need to build a faux site array to get it to do what we want.
   $site = array();
   $site['machine-name'] = $sitename;
-  $databases = _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port);
+  if (!$databases = _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port)) {
+    drush_log(dt("You have entered incorrect MySQL credentials."), 'error');
+    return;
+  }
   // Download the profile
   // Set download command arguments
   $dl_args = array($download);
@@ -539,7 +542,9 @@ function drush_terminatur_newsite($sitename = FALSE) {
     'drupal-project-rename' => $sitename,
     'y' => TRUE,
   );
-  drush_invoke_process('', 'pm-download', $dl_args, $dl_options);
+  if (!drush_invoke_process('', 'pm-download', $dl_args, $dl_options)) {
+    drush_log(dt("Could not download chosen profile."), 'error');
+  }
 
   // Install options
   $db_url = 'mysql://' . $databases['default']['default']['username'] . ':' . $databases['default']['default']['password'] . '@' . $databases['default']['default']['host'] . ':' . $databases['default']['default']['port'] . '/' . $databases['default']['default']['database'];
@@ -550,18 +555,27 @@ function drush_terminatur_newsite($sitename = FALSE) {
   drush_shell_exec("cd " . $destination . $sitename . " && drush site-install " . $install . " -y --db-url=" . $db_url . " --account-pass=" . $account_pass . " --site-name='" . $site_name . "'");
 
   // Update the new settings file
-  $databases = _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port);
+  if (!$databases = _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port)) {
+    drush_log(dt("You have entered incorrect MySQL credentials."), 'error');
+    return;
+  }
+
+  // Now that we have an alias entry we should be able to grab the site array
+  $site = _terminatur_aliases_get_local_site($sitename . TERMINATUR_LOCAL_SUFFIX);
+
+  // Build file dirs to prevent htaccess errors
+  _terminatur_files_set_up_dirs($site, $destination);
 
   // Build vhost add callback function
   $get_vhost_add_func = '_terminatur_vhost_add_' . TERMINATUR_ENV;
-  $get_vhost_add_func($sitename, $destination);
+  $get_vhost_add_func($site['machine-name'], $destination);
 
   // Build host add callback function
   $get_host_add_func = '_terminatur_host_add_' . TERMINATUR_ENV;
-  $get_host_add_func($sitename . TERMINATUR_LOCAL_SUFFIX);
+  $get_host_add_func($site['machine-name'] . TERMINATUR_LOCAL_SUFFIX);
 
   // Clear cache
-  drush_invoke_process('@' . TERMINATUR_LOCAL_PREFIX . '.' . $sitename . TERMINATUR_LOCAL_SUFFIX, 'cache-clear', array('all'), array('y'));
+  drush_invoke_process('@' . TERMINATUR_LOCAL_PREFIX . '.' . $site['machine-name'] . TERMINATUR_LOCAL_SUFFIX, 'cache-clear', array('all'), array('y'));
 
   // Finish
   drush_log('New site built!', 'success');

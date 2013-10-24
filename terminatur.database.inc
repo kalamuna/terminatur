@@ -184,5 +184,5 @@ function _terminatur_data_remove($site, $destination, $db_user, $db_pass, $db_ho
   $mysqli = new mysqli($databases['default']['default']['host'], $databases['default']['default']['username'], $databases['default']['default']['password'], NULL, (int) $databases['default']['default']['port']);
   $mysqli->query('DROP DATABASE ' . $databases['default']['default']['database']);
   $mysqli->close();
-  return TRUE:
+  return TRUE;
 }
