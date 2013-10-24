@@ -15,6 +15,13 @@ define('TERMINATUR_PANTHEON_ALIASES_FILE', TERMINATUR_DRUSH_DIR . 'pantheon.alia
  * necessary setup steps.
  */
 function terminatur_bootstrap($force_refresh = FALSE) {
+  // Load the Terminatur-generated ssh key if there's one.
+  if (file_exists(getenv('HOME') . '/.ssh/' . TERMINATUR_SSH_KEY)) {
+    drush_shell_exec('eval "$(ssh-agent)"');
+    drush_shell_exec('ssh-add ' . getenv('HOME') . '/.ssh/' . TERMINATUR_SSH_KEY);
+  }
+
+  // Make sure we have a key that'll work with Pantheon.
   $pantheon_keys = drush_cache_get('pantheon-keys', 'terminatur');
   if (!$pantheon_keys) {
     // Check for a SSH key that works with Pantheon.
@@ -25,10 +32,19 @@ function terminatur_bootstrap($force_refresh = FALSE) {
     }
     drush_cache_set('pantheon-keys', $pantheon_keys, 'terminatur');
   }
-
-  if (file_exists(getenv('HOME') . '/.ssh/' . TERMINATUR_SSH_KEY)) {
-    drush_shell_exec('eval "$(ssh-agent)"');
-    drush_shell_exec('ssh-add ' . getenv('HOME') . '/.ssh/' . TERMINATUR_SSH_KEY);
+  else {
+    // If we have a cached key(s), make sure it's loaded.
+    $key_loaded = FALSE;
+    foreach ($pantheon_keys->data as $key) {
+      if (_terminatur_is_key_loaded($key)) {
+        $key_loaded = TRUE;
+        break;
+      }
+    }
+    if (!$key_loaded) {
+      // If the key isn't loaded, remove it from the cache.
+      drush_cache_clear_all('pantheon-keys', 'terminatur');
+    }
   }
 
   // Download and parse the aliases file if it's not there.
@@ -144,7 +160,7 @@ function _terminatur_set_up_key() {
   $user_id = $session_data['user_uuid'];
   // Generate a key on the host.
   // @todo Remove existing Terminatur ssh key if it exists.
-  drush_shell_exec('hostname');
+  drush_shell_exec('hostname -f');
   $hostname = drush_shell_exec_output();
   $key_file = getenv('HOME') . '/.ssh/' . TERMINATUR_SSH_KEY;
   drush_shell_exec('ssh-keygen -C "terminatur@' . $hostname[0]  . '" -f "' . $key_file . '" -P ""');
@@ -156,11 +172,29 @@ function _terminatur_set_up_key() {
 }
 
 /**
+ * Checks if a given ssh key is loaded into the agent.
+ *
+ * @param string $key
+ *   The body of the key to check for.
+ *
+ * @return bool
+ *   TRUE if loaded, FALSE if not.
+ */
+function _terminatur_is_key_loaded($key) {
+  drush_shell_exec('ssh-add -L');
+  $host_keys = drush_shell_exec_output();
+  $host_keys = array_map('_terminatur_extract_key', $host_keys);
+  return in_array(_terminatur_extract_key($key), $host_keys);
+}
+
+/**
  * Calls Terminus to download the user's aliases file to /tmp.
  */
 function _terminatur_download_aliases() {
   $session_data = _terminatur_get_session();
-  drush_invoke_process('@self', 'pantheon-aliases', array(), array('destination' => TERMINATUR_TMP_DIR . 'terminatur.aliases.tmp'));
+  drush_set_option('destination', TERMINATUR_TMP_DIR . 'terminatur.aliases.tmp');
+  drush_terminus_pantheon_aliases_validate();
+  drush_terminus_pantheon_aliases();
 }
 
 /**
