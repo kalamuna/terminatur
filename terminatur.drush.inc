@@ -256,9 +256,13 @@ function drush_terminatur_data($sitename = FALSE) {
 
   drush_log(dt("Downloading data..."), 'warning');
 
-  // Build data callback function
+  // Build code callback function
   $get_data_func = '_terminatur_data_' . $site['terminatur']['database']['method'];
-  $get_data_func($site, $destination, $db_user, $db_pass, $db_host, $db_port, $pipe);
+  if (!$get_data_func($site, $destination)) {
+    return;
+  }
+
+  drush_log(dt("Data downloaded."), 'success');
 }
 
 /**

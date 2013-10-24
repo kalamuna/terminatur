@@ -23,16 +23,17 @@ function _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_hos
   }
 
   // Parse download data and begin the download
-  if (!_terminatur_data_download($site)) {
+  if (!$path = _terminatur_data_download($site)) {
     return _terminatur_data_pipe($site);
   }
   else {
   // Import downloaded data
     if (!drush_shell_exec("gunzip " . $path . " -f && " . $databases['default']['default']['connect'] . " < " . str_replace('sql.gz', 'sql', $path))) {
-      drush_log(dt("Import failed. Make sure you have gunzip installed."), 'error');
+      drush_log(dt("Couldn't import downloaded backup. Trying pipe instead."), 'warning');
       return _terminatur_data_pipe($site);
     }
   }
+  return TRUE;
 }
 
 /**
@@ -41,6 +42,7 @@ function _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_hos
 function _terminatur_data_download($site) {
   // Get the download link data
   if (!$site['terminatur']['database']['download-data'] = _terminatur_get_download_link($site, 'database')) {
+    drush_log(dt("You have no backups. Trying pipe instead."), 'warning');
     return FALSE;
   }
   // Parse download data and begin the download
@@ -51,10 +53,10 @@ function _terminatur_data_download($site) {
   $cache_duration = 86400*365;
   $path = _drush_download_file($data->url, getenv('HOME') .  DIRECTORY_SEPARATOR . $filename, $cache_duration);
   if (!$path && !drush_get_context('DRUSH_SIMULATE')) {
-    drush_log(dt("Download failed."), 'error');
+    drush_log(dt("Couldn't download backup. Trying pipe instead."), 'warning');
     return FALSE;
   }
-  return TRUE;
+  return $path;
 }
 
 /**
@@ -67,10 +69,14 @@ function _terminatur_data_pipe($site) {
       return FALSE;
     }
     // Unreap my heart: make sure DB server is awake
-    drush_invoke_process("@pantheon." . $site['machine-name'] . "." . $site['env'], 'core-status', array(), array());
+    if (!drush_invoke_process("@pantheon." . $site['machine-name'] . "." . $site['env'], 'core-status', array(), array())) {
+      drush_log(dt("Cannot connect to Pantheon."), 'error');
+      return FALSE;
+    }
     // Force it
     drush_set_context('DRUSH_AFFIRMATIVE', TRUE);
     drush_set_option('ssh-options', $site['ssh-options']);
+    drush_set_option('disable', 'pantheon_apachesolr');
     drush_sql_sync_pipe("@pantheon." . $site['machine-name'] . "." . $site['env'], "@" . TERMINATUR_LOCAL_PREFIX . "." . $site['machine-name'] . TERMINATUR_LOCAL_SUFFIX);
     return TRUE;
   }
@@ -153,9 +159,11 @@ function _terminatur_data_test_db_connection(&$databases) {
   // Make sure the database actually exists
   $mysqli = new mysqli($databases['default']['default']['host'], $databases['default']['default']['username'], $databases['default']['default']['password'], NULL, (int) $databases['default']['default']['port']);
   if ($mysqli->connect_error) {
+    drush_log(dt("Could not connect to MySQL database. Verify your credentials and try again."), 'error');
     return FALSE;
   }
   if (!$mysqli->query('CREATE DATABASE IF NOT EXISTS ' . $databases['default']['default']['database'])) {
+    drush_log(dt("Could not create new database. Verify you have permission and try again"), 'error');
     return FALSE;
   }
   $mysqli->close();
