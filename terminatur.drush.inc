@@ -289,9 +289,7 @@ function drush_terminatur_files($sitename = FALSE) {
 
   // Build files callback function
   $get_files_func = '_terminatur_files_' . $site['terminatur']['files']['method'];
-  if (!$get_files_func($site, $destination)) {
-    return;
-  }
+  $get_files_func($site, $destination);
 
   drush_log(dt("Files downloaded."), 'success');
 }
@@ -311,8 +309,7 @@ function drush_terminatur_pullsite($sitename = FALSE) {
 
   // Need MySQL
   if ($site['terminatur']['database']['method'] != 'mysql') {
-    drush_log(dt("You need at least MySQL for this to work."), 'error');
-    return;
+    return drush_set_error('TERMINATUR_ERROR', 'You need at least MySQL for this to work.');
   }
 
   // Gets some options or sets defaults
@@ -339,15 +336,17 @@ function drush_terminatur_pullsite($sitename = FALSE) {
   $pipe = drush_get_option('pipe');
   $files = drush_get_option('files');
 
-  // Set command arguments
-  $command_args = array($site['machine-name'] . "." . $site['env']);
+// Build callback functions
+  $get_data_func = '_terminatur_data_' . $site['terminatur']['database']['method'];
+  $get_code_func = '_terminatur_code_' . $site['terminatur']['code']['method'];
 
   // Code & Data
-  $get_code_func = '_terminatur_code_' . $site['terminatur']['code']['method'];
-  $get_code_func($site, $destination);
-  // Build data callback function
-  $get_data_func = '_terminatur_data_' . $site['terminatur']['database']['method'];
-  $get_data_func($site, $destination, $db_user, $db_pass, $db_host, $db_port, $pipe);
+  if (!$get_code_func($site, $destination)) {
+    return;
+  }
+  if (!$get_data_func($site, $destination, $db_user, $db_pass, $db_host, $db_port, $pipe)) {
+    return;
+  }
 
   // If applicable, files
   if ($files) {
@@ -393,8 +392,7 @@ function drush_terminatur_crushsite($sitename = FALSE) {
 
   // Do a different check here because a local site does not have a DB method set
   if (!drush_shell_exec('mysql --version')) {
-    drush_log(dt("You need at least MySQL for this to work."), 'error');
-    return;
+    return drush_set_error('TERMINATUR_ERROR', 'You need at least MySQL for this to work.');
   }
 
   // Gets some options or sets defaults
@@ -422,9 +420,15 @@ function drush_terminatur_crushsite($sitename = FALSE) {
   drush_log(dt("Removing site..."), 'warning');
 
   // @todo: to be consistence maybe we want these to be abstracted out a bit?
-  _terminatur_code_remove($site, $destination);
-  _terminatur_data_remove($site, $destination, $db_user, $db_pass, $db_host, $db_port);
-  _terminatur_files_remove($site, $destination);
+  if (!_terminatur_code_remove($site, $destination)) {
+    return;
+  }
+  if (!_terminatur_data_remove($site, $destination, $db_user, $db_pass, $db_host, $db_port)) {
+    return;
+  }
+  if (!_terminatur_files_remove($site, $destination)) {
+    return;
+  }
 
   // Build vhost remove callback function
   $get_vhost_remove_func = '_terminatur_vhost_remove_' . TERMINATUR_ENV;
@@ -456,14 +460,12 @@ function drush_terminatur_newsite($sitename = FALSE) {
     $sitename = drush_get_option('sitename');
   }
   if (preg_match('/[^a-z0-9-]/', $sitename)) {
-    drush_log(dt("New sitename can only be lowercase letters, numbers and hyphens."), 'error');
-    return;
+    return drush_set_error('TERMINATUR_ERROR', 'New sitename can only be lowercase letters, numbers and hyphens.');
   }
 
   // Do a different check here because a local site does not have a DB method set
   if (!drush_shell_exec('mysql --version')) {
-    drush_log(dt("You need at least MySQL for this to work."), 'error');
-    return;
+    return drush_set_error('TERMINATUR_ERROR', 'You need at least MySQL for this to work.');
   }
 
   // Gets some options or sets defaults
@@ -506,8 +508,7 @@ function drush_terminatur_newsite($sitename = FALSE) {
   }
   // This check has to happen here because we need $destination
   if (is_dir($destination . $sitename)) {
-    drush_log(dt("Already a site there, try another name."), 'error');
-    return;
+    return drush_set_error('TERMINATUR_ERROR', 'Already a site there, try another name.');
   }
 
   drush_log(dt("Building new site..."), 'warning');
@@ -519,7 +520,9 @@ function drush_terminatur_newsite($sitename = FALSE) {
   // We also need to build a faux site array to get it to do what we want.
   $site = array();
   $site['machine-name'] = $sitename;
-  $databases = _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port);
+  if (!$databases = _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port)) {
+    return drush_set_error('TERMINATUR_ERROR', 'You have entered incorrect MySQL credentials.');
+  }
   // Download the profile
   // Set download command arguments
   $dl_args = array($download);
@@ -529,7 +532,9 @@ function drush_terminatur_newsite($sitename = FALSE) {
     'drupal-project-rename' => $sitename,
     'y' => TRUE,
   );
-  drush_invoke_process('', 'pm-download', $dl_args, $dl_options);
+  if (!drush_invoke_process('', 'pm-download', $dl_args, $dl_options)) {
+    return drush_set_error('TERMINATUR_ERROR', 'Could not download chosen profile.');
+  }
 
   // Install options
   $db_url = 'mysql://' . $databases['default']['default']['username'] . ':' . $databases['default']['default']['password'] . '@' . $databases['default']['default']['host'] . ':' . $databases['default']['default']['port'] . '/' . $databases['default']['default']['database'];
@@ -540,18 +545,26 @@ function drush_terminatur_newsite($sitename = FALSE) {
   drush_shell_exec("cd " . $destination . $sitename . " && drush site-install " . $install . " -y --db-url=" . $db_url . " --account-pass=" . $account_pass . " --site-name='" . $site_name . "'");
 
   // Update the new settings file
-  $databases = _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port);
+  if (!$databases = _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port)) {
+    return drush_set_error('TERMINATUR_ERROR', 'You have entered incorrect MySQL credentials.');
+  }
+
+  // Now that we have an alias entry we should be able to grab the site array
+  $site = _terminatur_aliases_get_local_site($sitename . TERMINATUR_LOCAL_SUFFIX);
+
+  // Build file dirs to prevent htaccess errors
+  _terminatur_files_set_up_dirs($site, $destination);
 
   // Build vhost add callback function
   $get_vhost_add_func = '_terminatur_vhost_add_' . TERMINATUR_ENV;
-  $get_vhost_add_func($sitename, $destination);
+  $get_vhost_add_func($site['machine-name'], $destination);
 
   // Build host add callback function
   $get_host_add_func = '_terminatur_host_add_' . TERMINATUR_ENV;
-  $get_host_add_func($sitename . TERMINATUR_LOCAL_SUFFIX);
+  $get_host_add_func($site['machine-name'] . TERMINATUR_LOCAL_SUFFIX);
 
   // Clear cache
-  drush_invoke_process('@' . TERMINATUR_LOCAL_PREFIX . '.' . $sitename . TERMINATUR_LOCAL_SUFFIX, 'cache-clear', array('all'), array('y'));
+  drush_invoke_process('@' . TERMINATUR_LOCAL_PREFIX . '.' . $site['machine-name'] . TERMINATUR_LOCAL_SUFFIX, 'cache-clear', array('all'), array('y'));
 
   // Finish
   drush_log('New site built!', 'success');
@@ -570,8 +583,7 @@ function drush_terminatur_aliases() {
 function drush_terminatur_set_git() {
   // Do a different check here because a local site does not have a DB method set
   if (!drush_shell_exec('git --version')) {
-    drush_log(dt("You need git for this shit."), 'error');
-    return;
+    return drush_set_error('TERMINATUR_ERROR', 'You need git for this shit.');
   }
   $user = array();
   $user = _terminatur_get_user();

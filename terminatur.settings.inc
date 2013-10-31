@@ -57,7 +57,7 @@ function _terminatur_settings_build($settings_file, &$databases) {
   $build_settings_func = '_terminatur_settings_build_' . $drupal_version;
   // Make sure the file is writable
   if (!chmod($settings_file, 0644)) {
-    drush_log(dt("Settings file needs to be writable."), 'error');
+    return drush_set_error('TERMINATUR_ERROR', 'Settings file needs to be writable.');
   }
   $settings_file = $build_settings_func($settings_file, $databases);
 

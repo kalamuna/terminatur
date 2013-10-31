@@ -13,8 +13,7 @@
 function _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_host, $db_port, $pipe = FALSE) {
   $databases = array();
   if (!$databases = _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port)) {
-    drush_log(dt("You have entered incorrect MySQL credentials."), 'error');
-    return FALSE;
+    return drush_set_error('TERMINATUR_ERROR', 'You have entered incorrect MySQL credentials.');
   }
 
   // Try to get the most up to date data with sql-sync-pipe
@@ -65,13 +64,11 @@ function _terminatur_data_download($site) {
 function _terminatur_data_pipe($site) {
   if (function_exists('drush_sql_sync_pipe')) {
     if (!$local_site = _terminatur_aliases_get_local_site($site['machine-name'] . TERMINATUR_LOCAL_SUFFIX)) {
-      drush_log(dt("You need to have a local site set up to use pipe."), 'error');
-      return FALSE;
+      return drush_set_error('TERMINATUR_ERROR', 'You need to have a local site set up to use pipe.');
     }
     // Unreap my heart: make sure DB server is awake
     if (!drush_invoke_process("@pantheon." . $site['machine-name'] . "." . $site['env'], 'core-status', array(), array())) {
-      drush_log(dt("Cannot connect to Pantheon."), 'error');
-      return FALSE;
+      return drush_set_error('TERMINATUR_ERROR', 'Cannot connect to Pantheon.');
     }
     // Force it
     drush_set_context('DRUSH_AFFIRMATIVE', TRUE);
@@ -81,8 +78,7 @@ function _terminatur_data_pipe($site) {
     return TRUE;
   }
   else {
-    drush_log(dt("You need to have sql-sync-pipe installed to use this command."), 'error');
-    return FALSE;
+    return drush_set_error('TERMINATUR_ERROR', 'You need to have sql-sync-pipe installed to use this command.');
   }
 }
 
@@ -159,12 +155,10 @@ function _terminatur_data_test_db_connection(&$databases) {
   // Make sure the database actually exists
   $mysqli = new mysqli($databases['default']['default']['host'], $databases['default']['default']['username'], $databases['default']['default']['password'], NULL, (int) $databases['default']['default']['port']);
   if ($mysqli->connect_error) {
-    drush_log(dt("Could not connect to MySQL database. Verify your credentials and try again."), 'error');
-    return FALSE;
+    return drush_set_error('TERMINATUR_ERROR', 'Could not connect to MySQL database. Verify your credentials and try again.');
   }
   if (!$mysqli->query('CREATE DATABASE IF NOT EXISTS ' . $databases['default']['default']['database'])) {
-    drush_log(dt("Could not create new database. Verify you have permission and try again"), 'error');
-    return FALSE;
+    return drush_set_error('TERMINATUR_ERROR', 'Could not create new database. Verify you have permission and try again');
   }
   $mysqli->close();
   // Include a connection string
@@ -178,10 +172,10 @@ function _terminatur_data_test_db_connection(&$databases) {
 function _terminatur_data_remove($site, $destination, $db_user, $db_pass, $db_host, $db_port) {
   $databases = array();
   if (!$databases = _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port)) {
-    drush_log(dt("You have entered incorrect MySQL credentials."), 'error');
-    return;
+    return drush_set_error('TERMINATUR_ERROR', 'You have entered incorrect MySQL credentials.');
   }
   $mysqli = new mysqli($databases['default']['default']['host'], $databases['default']['default']['username'], $databases['default']['default']['password'], NULL, (int) $databases['default']['default']['port']);
   $mysqli->query('DROP DATABASE ' . $databases['default']['default']['database']);
   $mysqli->close();
+  return TRUE;
 }
