@@ -72,6 +72,9 @@ function terminatur_drush_command() {
       'pipe' => array(
         'description' => 'Use a pipe instead of a backup. This is slower but it will grab the most up to date data.',
       ),
+      'db-backup-bucket' => array(
+        'description' => 'A specific backup bucket to download from, \'latest\', or \'new\'.',
+      ),
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
@@ -99,6 +102,9 @@ function terminatur_drush_command() {
       ),
       'files' => array(
         'description' => 'Use this flag to also pull down your files.',
+      ),
+      'db-backup-bucket' => array(
+        'description' => 'A specific backup bucket to download from, \'latest\', or \'new\'.',
       ),
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
@@ -254,9 +260,8 @@ function drush_terminatur_data($sitename = FALSE) {
   }
   $pipe = drush_get_option('pipe');
 
-  if (!_terminatur_choose_data_bucket($site)) {
-    return FALSE;
-  }
+  // Get the backup bucket to use.
+  _terminatur_get_data_bucket($site);
 
   drush_log(dt("Downloading data..."), 'warning');
 
@@ -340,9 +345,8 @@ function drush_terminatur_pullsite($sitename = FALSE) {
   $pipe = drush_get_option('pipe');
   $files = drush_get_option('files');
 
-  if (!_terminatur_choose_data_bucket($site)) {
-    return;
-  }
+  // Get the backup bucket to use.
+  _terminatur_get_data_bucket($site);
 
   // Build callback functions
   $get_data_func = '_terminatur_data_' . $site['terminatur']['database']['method'];

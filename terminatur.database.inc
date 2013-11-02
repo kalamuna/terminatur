@@ -220,6 +220,34 @@ function _terminatur_data_remove($site, $destination, $db_user, $db_pass, $db_ho
 }
 
 /**
+ * Gets the database backup bucket for the site.
+ *
+ * @param array $site
+ *   The site we're operating on.
+ *
+ * @return bool
+ *   TRUE on success, FALSE on failure.
+ */
+function _terminatur_get_data_bucket(&$site) {
+  // If backup bucket option passed, use it.
+  $backup_bucket = drush_get_option('db-backup-bucket');
+  if ($backup_bucket && is_string($backup_bucket)) {
+    if ($backup_bucket == 'new') {
+      $backup_bucket = _terminatur_data_make_backup($site);
+    }
+    elseif ($backup_bucket == 'latest') {
+      $backup_bucket = terminus_latest_bucket($site['uuid'], $site['env'], 'database');
+    }
+    $site['terminatur']['database']['download-bucket'] = $backup_bucket;
+  }
+  // If not, ask the user.
+  elseif (!_terminatur_choose_data_bucket($site)) {
+    return FALSE;
+  }
+  return TRUE;
+}
+
+/**
  * Asks the user what bucket to download the database from.
  *
  * @param array $site
