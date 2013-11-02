@@ -254,6 +254,10 @@ function drush_terminatur_data($sitename = FALSE) {
   }
   $pipe = drush_get_option('pipe');
 
+  if (!_terminatur_choose_data_bucket($site)) {
+    return FALSE;
+  }
+
   drush_log(dt("Downloading data..."), 'warning');
 
   // Build code callback function
@@ -336,7 +340,11 @@ function drush_terminatur_pullsite($sitename = FALSE) {
   $pipe = drush_get_option('pipe');
   $files = drush_get_option('files');
 
-// Build callback functions
+  if (!_terminatur_choose_data_bucket($site)) {
+    return;
+  }
+
+  // Build callback functions
   $get_data_func = '_terminatur_data_' . $site['terminatur']['database']['method'];
   $get_code_func = '_terminatur_code_' . $site['terminatur']['code']['method'];
 

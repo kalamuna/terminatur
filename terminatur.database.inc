@@ -6,6 +6,11 @@
  */
 
 /**
+ * Amount of time to wait for Pantheon to create a database backup.
+ */
+define('TERMINATUR_DB_BACKUP_TIMEOUT', 900); // 15 minutes.
+
+/**
  * Gets the DB either by pipe or download adn then imports into mysql
  *
  * Validates and builds settings files it applicable.
@@ -80,6 +85,40 @@ function _terminatur_data_pipe($site) {
   else {
     return drush_set_error('TERMINATUR_ERROR', 'You need to have sql-sync-pipe installed to use this command.');
   }
+}
+
+/**
+ * Requests a database backup via Terminus.
+ *
+ * @param array $site
+ *   Site to make the backup for.
+ *
+ * @return string|bool
+ *   New database backup bucket, or FALSE if the call timed out.
+ */
+function _terminatur_data_make_backup($site) {
+  $backup_complete = FALSE;
+  $backup_started = time();
+  $current_backup = terminus_latest_bucket($site['uuid'], $site['env'], 'database');
+  terminus_api_site_make_backup($site['uuid'], $site['env'], 'backup', FALSE, TRUE, FALSE);
+  // @todo Check for Terminus API failure.
+  // Terminus API just queues the backup, so wait around till it's done.
+  while (!$backup_complete) {
+    drush_log(dt('Creating database backup...'), 'warning');
+    sleep(5);
+    // Check if backup finished.
+    $latest_backup = terminus_latest_bucket($site['uuid'], $site['env'], 'database');
+    if ($latest_backup != $current_backup) {
+      $backup_complete = TRUE;
+      $current_backup = $latest_backup;
+    }
+    // Error out if the backup has taken too long.
+    elseif ((time() - $backup_started) > TERMINATUR_DB_BACKUP_TIMEOUT) {
+      return FALSE;
+    }
+  }
+  drush_log(dt('Database backup complete!'), 'success');
+  return $current_backup;
 }
 
 /**
@@ -177,5 +216,65 @@ function _terminatur_data_remove($site, $destination, $db_user, $db_pass, $db_ho
   $mysqli = new mysqli($databases['default']['default']['host'], $databases['default']['default']['username'], $databases['default']['default']['password'], NULL, (int) $databases['default']['default']['port']);
   $mysqli->query('DROP DATABASE ' . $databases['default']['default']['database']);
   $mysqli->close();
+  return TRUE;
+}
+
+/**
+ * Asks the user what bucket to download the database from.
+ *
+ * @param array $site
+ *   The site we're working with, to which we'll add the chosen download bucket.
+ *
+ * @return bool
+ *   TRUE if user completed input successfully, FALSE if not.
+ */
+function _terminatur_choose_data_bucket(&$site) {
+  // Ask the user if they want to download the latest bucket,
+  // create a new one, or select one from a list.
+  $bucket_source_options = array(
+    'latest' => dt('Get it from the latest Pantheon backup.'),
+    'new' => dt('Create a new Pantheon backup and download it.'),
+    'pick' => dt('Pick one from a list of Pantheon backups.'),
+  );
+  $bucket_source_choice = drush_choice($bucket_source_options, dt('How do you want to download your database?'));
+  if (!$bucket_source_choice) {
+    return drush_set_error('TERMINATUR_ERROR', dt('Command cancelled.'));
+  }
+  $bucket = NULL;
+  // If user opted to make a new backup, carry that out.
+  if ($bucket_source_choice == 'new') {
+    $bucket = _terminatur_data_make_backup($site);
+    if (!$bucket) {
+      return drush_set_error('TERMINATUR_ERROR', dt('Failed to create database backup.'));
+    }
+  }
+  // If user opted to use the latest backup, retrieve it.
+  elseif ($bucket_source_choice == 'latest') {
+    $bucket = terminus_latest_bucket($site['uuid'], $site['env'], 'database');
+    if (!$bucket) {
+      return drush_set_error('TERMINATUR_ERROR', dt('Unable to retrieve the latest database backup from Pantheon.'));
+    }
+  }
+  // If the user wants to see a list of backups, show it to them and have them select one.
+  elseif ($bucket_source_choice == 'pick') {
+    $backups = terminus_api_backup_catalog($site['uuid'], $site['env']);
+    $bucket_choices = array();
+    foreach(json_decode($backups['json']) as $label => $backup) {
+      $parts = explode('_', $label);
+      if ($parts[2] != 'database') {
+        continue;
+      }
+      $bucket_choices[$label] = date('F j, Y h:i:s A', $backup->timestamp);
+    }
+    ksort($bucket_choices);
+    $bucket_choices = array_reverse($bucket_choices);
+    $bucket = drush_choice($bucket_choices, dt('Which database backup do you want to download?'));
+    if (!$bucket) {
+      return drush_set_error('TERMINATUR_ERROR', dt('Command cancelled.'));
+    }
+    $bucket = str_replace('_database', '', $bucket);
+  }
+  // Assign the backup bucket to the site.
+  $site['terminatur']['database']['download-bucket'] = $bucket;
   return TRUE;
 }
