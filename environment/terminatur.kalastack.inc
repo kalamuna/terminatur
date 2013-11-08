@@ -153,6 +153,9 @@ function _terminatur_alias_add_kalastack($site, $destination) {
     if (isset($site['built-from'])) {
       $aliases[$site['machine-name'] . TERMINATUR_LOCAL_SUFFIX]['built-from'] = $site['built-from'];
     }
+    if (isset($site['uuid'])) {
+      $aliases[$site['machine-name'] . TERMINATUR_LOCAL_SUFFIX]['uuid'] = $site['uuid'];
+    }
     // if has Thumbnail
     // @todo: Want to make this kalastack specific at some point
     if (isset($site['thumbnail'])) {
@@ -207,6 +210,9 @@ function _terminatur_alias_write_aliases_kalastack($aliases) {
     // Only include built froms if they exist
     if (isset($value['built-from'])) {
       $output .= "  'built-from' => '" . $value['built-from'] .  "',\n";
+    }
+    if (isset($value['uuid'])) {
+      $output .= "  'uuid' => '" . $value['uuid'] .  "',\n";
     }
     // if has Thumbnail
     // @todo: Want to make this kalastack specific at some point
