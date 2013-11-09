@@ -69,9 +69,6 @@ function terminatur_drush_command() {
       'drush pulldata sitename.dev' => 'Pulls down the database for a site at @pantheon.mysite.dev.',
     ),
     'options' => array(
-      'pipe' => array(
-        'description' => 'Use a pipe instead of a backup. This is slower but it will grab the most up to date data.',
-      ),
       'db-backup-bucket' => array(
         'description' => 'A specific backup bucket to download from, \'latest\', or \'new\'.',
       ),
@@ -97,9 +94,6 @@ function terminatur_drush_command() {
       'drush pullsite sitename.dev --files' => 'Pulls down the code, data and files for a site at @pantheon.mysite.dev. Sets up server side conf on Kalabox.',
     ),
     'options' => array(
-      'pipe' => array(
-        'description' => 'Use a pipe instead of a backup. This is slower but it will grab the most up to date data.',
-      ),
       'files' => array(
         'description' => 'Use this flag to also pull down your files.',
       ),
@@ -258,7 +252,6 @@ function drush_terminatur_data($sitename = FALSE) {
   if (!$db_port ) {
     $db_port  = TERMINATUR_DEFAULT_DB_PORT;
   }
-  $pipe = drush_get_option('pipe');
 
   // Get the backup bucket to use.
   _terminatur_get_data_bucket($site);
@@ -342,7 +335,6 @@ function drush_terminatur_pullsite($sitename = FALSE) {
   if (!$db_port ) {
     $db_port  = TERMINATUR_DEFAULT_DB_PORT;
   }
-  $pipe = drush_get_option('pipe');
   $files = drush_get_option('files');
 
   // Get the backup bucket to use.
@@ -356,7 +348,7 @@ function drush_terminatur_pullsite($sitename = FALSE) {
   if (!$get_code_func($site, $destination)) {
     return;
   }
-  if (!$get_data_func($site, $destination, $db_user, $db_pass, $db_host, $db_port, $pipe)) {
+  if (!$get_data_func($site, $destination, $db_user, $db_pass, $db_host, $db_port)) {
     return;
   }
 

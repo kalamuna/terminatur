@@ -18,7 +18,6 @@ If you are interested in providing some of these environmental plugins please co
 * Drush 5.1+ - https://github.com/drush-ops/drush
 * PHP 5.3.3+ with cURL
 * Terminus - https://raw.github.com/pantheon-systems/terminus
-* (Optional) SQL-SYNC-PIPE - https://drupal.org/project/drush_sql_sync_pipe
 * (Optional) MySQL 5+ - But you can't really do much without it
 
 ## Installing Terminatur with Composer and Packagist
@@ -82,7 +81,7 @@ the local connection configuration. If you run this command a second time it wil
 refresh your code, data and files.
 ```bash
 $ drush pullcode mysite.dev # Pulls down your Pantheon code with either git or wget
-$ drush pulldata mysite.dev # Imports your Pantheon database, either by archive or pipe
+$ drush pulldata mysite.dev # Imports your Pantheon database from a specific backup, the latest backup, or a newly created backup
 $ drush pullfiles mysite.dev # Pulls down your Pantheon files, either by rsync or wget
 ```
 Running any of these commands more than once will simply fetch what's new and pull it down.

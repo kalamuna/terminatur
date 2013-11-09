@@ -11,30 +11,26 @@
 define('TERMINATUR_DB_BACKUP_TIMEOUT', 900); // 15 minutes.
 
 /**
- * Gets the DB either by pipe or download adn then imports into mysql
+ * Gets the DB either by downloading a specific backup or creating a new one, then imports into mysql
  *
  * Validates and builds settings files it applicable.
  */
-function _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_host, $db_port, $pipe = FALSE) {
+function _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_host, $db_port) {
   $databases = array();
   if (!$databases = _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port)) {
     return drush_set_error('TERMINATUR_ERROR', 'You have entered incorrect MySQL credentials.');
   }
 
-  // Try to get the most up to date data with sql-sync-pipe
-  if ($pipe) {
-    return _terminatur_data_pipe($site);
-  }
-
   // Parse download data and begin the download
   if (!$path = _terminatur_data_download($site)) {
-    return _terminatur_data_pipe($site);
+    // If that fails, fall back to creating a new backup.
+    $site['terminatur']['database']['download-bucket'] = _terminatur_data_make_backup($site);
+    $path = _terminatur_data_download($site);
   }
   else {
   // Import downloaded data
     if (!drush_shell_exec("gunzip " . $path . " -f && " . $databases['default']['default']['connect'] . " < " . str_replace('sql.gz', 'sql', $path))) {
-      drush_log(dt("Couldn't import downloaded backup. Trying pipe instead."), 'warning');
-      return _terminatur_data_pipe($site);
+      return drush_set_error('TERMINATUR_ERROR', dt("Couldn't import downloaded backup."));
     }
   }
   return TRUE;
@@ -46,7 +42,7 @@ function _terminatur_data_mysql($site, $destination, $db_user, $db_pass, $db_hos
 function _terminatur_data_download($site) {
   // Get the download link data
   if (!$site['terminatur']['database']['download-data'] = _terminatur_get_download_link($site, 'database')) {
-    drush_log(dt("You have no backups. Trying pipe instead."), 'warning');
+    drush_log(dt("You have no backups. Attempting to create one."), 'warning');
     return FALSE;
   }
   // Parse download data and begin the download
@@ -57,34 +53,10 @@ function _terminatur_data_download($site) {
   $cache_duration = 86400*365;
   $path = _drush_download_file($data->url, getenv('HOME') .  DIRECTORY_SEPARATOR . $filename, $cache_duration);
   if (!$path && !drush_get_context('DRUSH_SIMULATE')) {
-    drush_log(dt("Couldn't download backup. Trying pipe instead."), 'warning');
+    drush_log(dt("Couldn't download backup. Trying to create a new backup instead."), 'warning');
     return FALSE;
   }
   return $path;
-}
-
-/**
- * Downloads a dump of the Pantheon database
- */
-function _terminatur_data_pipe($site) {
-  if (function_exists('drush_sql_sync_pipe')) {
-    if (!$local_site = _terminatur_aliases_get_local_site($site['machine-name'] . TERMINATUR_LOCAL_SUFFIX)) {
-      return drush_set_error('TERMINATUR_ERROR', 'You need to have a local site set up to use pipe.');
-    }
-    // Unreap my heart: make sure DB server is awake
-    if (!drush_invoke_process("@pantheon." . $site['machine-name'] . "." . $site['env'], 'core-status', array(), array())) {
-      return drush_set_error('TERMINATUR_ERROR', 'Cannot connect to Pantheon.');
-    }
-    // Force it
-    drush_set_context('DRUSH_AFFIRMATIVE', TRUE);
-    drush_set_option('ssh-options', $site['ssh-options']);
-    drush_set_option('disable', 'pantheon_apachesolr');
-    drush_sql_sync_pipe("@pantheon." . $site['machine-name'] . "." . $site['env'], "@" . TERMINATUR_LOCAL_PREFIX . "." . $site['machine-name'] . TERMINATUR_LOCAL_SUFFIX);
-    return TRUE;
-  }
-  else {
-    return drush_set_error('TERMINATUR_ERROR', 'You need to have sql-sync-pipe installed to use this command.');
-  }
 }
 
 /**
@@ -286,13 +258,17 @@ function _terminatur_choose_data_bucket(&$site) {
   // If the user wants to see a list of backups, show it to them and have them select one.
   elseif ($bucket_source_choice == 'pick') {
     $backups = terminus_api_backup_catalog($site['uuid'], $site['env']);
+    $backups = isset($backups['json']) ? json_decode($backups['json'], true) : '';
+    if (empty($backups)) {
+      return drush_set_error('TERMINATUR_ERROR', dt('Sorry, you don\'t have any backups.'));
+    }
     $bucket_choices = array();
-    foreach(json_decode($backups['json']) as $label => $backup) {
+    foreach($backups as $label => $backup) {
       $parts = explode('_', $label);
       if ($parts[2] != 'database') {
         continue;
       }
-      $bucket_choices[$label] = date('F j, Y h:i:s A', $backup->timestamp);
+      $bucket_choices[$label] = date('F j, Y h:i:s A', $backup['timestamp']);
     }
     ksort($bucket_choices);
     $bucket_choices = array_reverse($bucket_choices);
