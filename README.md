@@ -61,13 +61,13 @@ they're missing.
     # Authenticate with Pantheon and pull down your aliases
     drush ta
     # Download a site with all its files
-    drush pullsite mysite.dev # mysite.dev is from the alias @pantheon.mysite.dev
+    drush pullsite mysite.dev # mysite.dev is from the alias @terminatur.mysite.dev
     # Remove this site
     drush crush mysite.dev
 
 ## Some more indepth things
 
-- mysite.dev corresponds to @pantheon.mysite.dev
+- mysite.dev corresponds to @terminatur.mysite.dev
 - mysite.local correspondes to @local.mysite.local
 - mysite.kala correspondes to @kalastack.mysite.local
 

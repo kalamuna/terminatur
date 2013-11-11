@@ -7,6 +7,7 @@
 // Constants
 define('TERMINATUR_SSH_KEY', 'terminatur.id_rsa');
 define('TERMINATUR_PANTHEON_ALIASES_FILE', TERMINATUR_DRUSH_DIR . 'pantheon.aliases.drushrc.php');
+define('TERMINATUR_TERMINATUR_ALIASES_FILE', TERMINATUR_DRUSH_DIR . 'terminatur.aliases.drushrc.php');
 
 /**
  * Ensures user has set up SSH and has downloaded their Pantheon aliases file.
@@ -49,12 +50,12 @@ function terminatur_bootstrap($force_refresh = FALSE) {
   // Download and parse the aliases file if it's not there.
   // @todo: might want to do some sort of validation here first?
   $aliases = array();
-  if (!file_exists(TERMINATUR_PANTHEON_ALIASES_FILE) || $force_refresh === TRUE) {
+  if (!file_exists(TERMINATUR_TERMINATUR_ALIASES_FILE) || $force_refresh === TRUE) {
     _terminatur_download_aliases();
     $aliases = _terminatur_parse_aliases();
   }
   else {
-    require TERMINATUR_PANTHEON_ALIASES_FILE;
+    require TERMINATUR_TERMINATUR_ALIASES_FILE;
   }
 
   // @todo Validate the pantheon aliases file.
@@ -203,7 +204,7 @@ function _terminatur_load_default_key() {
  */
 function _terminatur_download_aliases() {
   $session_data = _terminatur_get_session();
-  drush_set_option('destination', TERMINATUR_TMP_DIR . 'terminatur.aliases.tmp');
+  drush_set_option('destination', TERMINATUR_PANTHEON_ALIASES_FILE);
   drush_terminus_pantheon_aliases_validate();
   drush_terminus_pantheon_aliases();
 }
@@ -214,8 +215,8 @@ function _terminatur_download_aliases() {
 function _terminatur_parse_aliases() {
   // Load in an unblemished Pantheon alias file
   $aliases = array();
-  if (file_exists(TERMINATUR_TMP_DIR . "/terminatur.aliases.tmp")) {
-    require TERMINATUR_TMP_DIR . "/terminatur.aliases.tmp";
+  if (file_exists(TERMINATUR_PANTHEON_ALIASES_FILE)) {
+    require TERMINATUR_PANTHEON_ALIASES_FILE;
   }
   else {
     return FALSE;
@@ -381,7 +382,7 @@ function _terminatur_write_aliases(&$aliases) {
   }
 
   // Write file
-  file_put_contents(TERMINATUR_PANTHEON_ALIASES_FILE, $output);
+  file_put_contents(TERMINATUR_TERMINATUR_ALIASES_FILE, $output);
 }
 
 /**

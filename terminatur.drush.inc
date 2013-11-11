@@ -57,7 +57,7 @@ function terminatur_drush_command() {
     'description' => dt('Pulls down the code for a Pantheon site.'),
     'aliases' => array('pullcode', 'pc'),
     'examples' => array(
-      'drush pullcode mysite.dev' => 'Pulls down the code for the site at @pantheon.mysite.dev.',
+      'drush pullcode mysite.dev' => 'Pulls down the code for the site at @terminatur.mysite.dev.',
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
@@ -66,7 +66,7 @@ function terminatur_drush_command() {
     'description' => dt('Pulls down the database for a Pantheon site.'),
     'aliases' => array('pulldata', 'pd'),
     'examples' => array(
-      'drush pulldata sitename.dev' => 'Pulls down the database for a site at @pantheon.mysite.dev.',
+      'drush pulldata sitename.dev' => 'Pulls down the database for a site at @terminatur.mysite.dev.',
     ),
     'options' => array(
       'db-backup-bucket' => array(
@@ -81,7 +81,7 @@ function terminatur_drush_command() {
     'description' => dt('Pulls down the files for a Pantheon site.'),
     'aliases' => array('pullfiles', 'pf'),
     'examples' => array(
-      'drush pullfiles sitename.dev' => 'Pulls down the files for a site at @pantheon.mysite.dev.',
+      'drush pullfiles sitename.dev' => 'Pulls down the files for a site at @terminatur.mysite.dev.',
     ),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
@@ -90,8 +90,8 @@ function terminatur_drush_command() {
     'description' => dt('Pulls down the code, data and files for a Pantheon site. If on Kalabox creates hosts entry, vhost, alias and edits settings.php.'),
     'aliases' => array('pullsite', 'ps'),
     'examples' => array(
-      'drush pullsite sitename.dev' => 'Pulls down the code and data for a site at @pantheon.mysite.dev. Sets up server side conf on Kalabox.',
-      'drush pullsite sitename.dev --files' => 'Pulls down the code, data and files for a site at @pantheon.mysite.dev. Sets up server side conf on Kalabox.',
+      'drush pullsite sitename.dev' => 'Pulls down the code and data for a site at @terminatur.mysite.dev. Sets up server side conf on Kalabox.',
+      'drush pullsite sitename.dev --files' => 'Pulls down the code, data and files for a site at @terminatur.mysite.dev. Sets up server side conf on Kalabox.',
     ),
     'options' => array(
       'files' => array(
@@ -109,7 +109,7 @@ function terminatur_drush_command() {
     'description' => dt('Removes a site completely.'),
     'aliases' => array('crushsite', 'crush', 'wmd', 'cs'),
     'examples' => array(
-      'drush crushsite sitename.dev' => 'Removes a site at @pantheon.mysite.dev or @kalabox.mysite.dev completely.',
+      'drush crushsite sitename.dev' => 'Removes a site at @terminatur.mysite.dev or @kalabox.mysite.dev completely.',
      ),
     'options' => array(),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
@@ -140,7 +140,7 @@ function terminatur_drush_command() {
 
   // Include standard arguments for above commands
   $common_args = array(
-    'sitename' => 'The sitename.dev part of @pantheon.sitename.dev.',
+    'sitename' => 'The sitename.dev part of @terminatur.sitename.dev.',
   );
   $common_options = array(
     'destination' => array(
@@ -189,7 +189,7 @@ function terminatur_drush_command() {
  *
  * @todo: Right now this assumes you have git, maybe STFP or WGET in the future?
  *
- * @param  boolean $sitename This is the "mysite.dev" part of @pantheon.mysite.dev
+ * @param  boolean $sitename This is the "mysite.dev" part of @terminatur.mysite.dev
  */
 function drush_terminatur_code($sitename = FALSE) {
   // Grabs info about the site
@@ -220,7 +220,7 @@ function drush_terminatur_code($sitename = FALSE) {
 /**
  * Gets the database for the Pantheon site
  *
- * @param  boolean $sitename This is the "mysite.dev" part of @pantheon.mysite.dev
+ * @param  boolean $sitename This is the "mysite.dev" part of @terminatur.mysite.dev
  */
 function drush_terminatur_data($sitename = FALSE) {
   // Grabs info about the site
