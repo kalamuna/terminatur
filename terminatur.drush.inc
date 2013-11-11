@@ -352,7 +352,20 @@ function drush_terminatur_pullsite($sitename = FALSE) {
     return;
   }
 
-  // If applicable, files
+  // Build vhost add callback function
+  $get_vhost_add_func = '_terminatur_vhost_add_' . TERMINATUR_ENV;
+  $get_vhost_add_func($site['machine-name'], $destination);
+
+  // Build host add callback function
+  $get_host_add_func = '_terminatur_host_add_' . TERMINATUR_ENV;
+  $get_host_add_func($site['machine-name'] . TERMINATUR_LOCAL_SUFFIX);
+
+  // Run additional environnment specific pullsite tasks
+  if (function_exists($get_pull_more_func = '_terminatur_pullsite_' . TERMINATUR_ENV)) {
+    $get_pull_more_func($site);
+  }
+
+  // If applicable, run this here so the user has a working site before we download files
   if ($files) {
     $get_files_func = '_terminatur_files_' . $site['terminatur']['files']['method'];
     $get_files_func($site, $destination);
@@ -362,21 +375,8 @@ function drush_terminatur_pullsite($sitename = FALSE) {
     _terminatur_files_set_up_dirs($site, $destination);
   }
 
-  // Build vhost add callback function
-  $get_vhost_add_func = '_terminatur_vhost_add_' . TERMINATUR_ENV;
-  $get_vhost_add_func($site['machine-name'], $destination);
-
-  // Build host add callback function
-  $get_host_add_func = '_terminatur_host_add_' . TERMINATUR_ENV;
-  $get_host_add_func($site['machine-name'] . TERMINATUR_LOCAL_SUFFIX);
-
   // Clear cache
   drush_invoke_process('@' . TERMINATUR_LOCAL_PREFIX . '.' . $site['machine-name'] . TERMINATUR_LOCAL_SUFFIX, 'cache-clear', array('all'), array('y'));
-
-  // Run additional environnment specific pullsite tasks
-  if (function_exists($get_pull_more_func = '_terminatur_pullsite_' . TERMINATUR_ENV)) {
-    $get_pull_more_func($site);
-  }
 
   // Finish
   drush_log('Site built!', 'success');
