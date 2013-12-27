@@ -201,6 +201,8 @@ function _terminatur_data_remove($site, $destination, $db_user, $db_pass, $db_ho
  *   TRUE on success, FALSE on failure.
  */
 function _terminatur_get_data_bucket(&$site) {
+  // Authenticate with Terminus.
+  _terminatur_get_session();
   // If backup bucket option passed, use it.
   $backup_bucket = drush_get_option('db-backup-bucket');
   if ($backup_bucket && is_string($backup_bucket)) {
