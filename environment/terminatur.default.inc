@@ -8,7 +8,7 @@
 // Constants
 define('TERMINATUR_LOCAL_SUFFIX', '.local');
 define('TERMINATUR_LOCAL_PREFIX', 'local');
-define('TERMINATUR_DC_SUFFIX', '_local');
+define('TERMINATUR_DB_SUFFIX', '_local');
 define('TERMINATUR_DRUSH_DIR', getenv('HOME') . DIRECTORY_SEPARATOR . '.drush' . DIRECTORY_SEPARATOR);
 define('TERMINATUR_LOCAL_ALIASES_FILE', TERMINATUR_DRUSH_DIR . TERMINATUR_LOCAL_PREFIX . '.aliases.drushrc.php');
 
