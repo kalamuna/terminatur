@@ -120,7 +120,7 @@ function _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, 
     elseif (file_exists($destination . $site['machine-name'] . TERMINATUR_DEFAULT_DEFAULT_DIR . "default.settings.php")) {
       // Sometimes settings.php is gitignored so we should instantiate one and try again
       copy($destination . $site['machine-name'] . TERMINATUR_DEFAULT_DEFAULT_DIR . "default.settings.php", $destination . $site['machine-name'] . TERMINATUR_DEFAULT_DEFAULT_DIR . "settings.php");
-      _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port);
+      return _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port);
     }
   }
   else {
