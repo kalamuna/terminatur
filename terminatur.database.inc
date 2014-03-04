@@ -123,9 +123,7 @@ function _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, 
       return _terminatur_data_get_db_creds($site, $destination, $db_user, $db_pass, $db_host, $db_port);
     }
   }
-  else {
-    return _terminatur_data_test_db_connection(_terminatur_data_parse_db_url($db_url, NULL));
-  }
+  return _terminatur_data_test_db_connection(_terminatur_data_parse_db_url($db_url, NULL));
 }
 
 /**
