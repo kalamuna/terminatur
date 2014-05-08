@@ -25,6 +25,10 @@ function _terminatur_settings_validate($settings_file) {
       $db_url = '';
       $db_prefix = '';
     }
+    
+    //Stub function to avoid error on validations.
+    function drupal_fast_404(){} 
+    
     // Load settings file
     require $settings_file;
     // Parse drupal 6
