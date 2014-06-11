@@ -1,7 +1,7 @@
 # Terminatur
 
 Terminatur is a set of drush commands to extend the functionality provided by the amazing
-[Terminus](https://raw.github.com/pantheon-systems/terminus)
+[Terminus](https://github.com/pantheon-systems/terminus)
 
 Specifically Terminatur allows you to build Pantheon sites on your local development environment.
 It takes care of handling your settings, vhosts, aliases... all the stuff that is generally annoying.
@@ -17,7 +17,7 @@ If you are interested in providing some of these environmental plugins please co
 
 * Drush 5.1+ - https://github.com/drush-ops/drush
 * PHP 5.3.3+ with cURL
-* Terminus - https://raw.github.com/pantheon-systems/terminus
+* Terminus - https://github.com/pantheon-systems/terminus
 * (Optional) MySQL 5+ - But you can't really do much without it
 
 ## Installing Terminatur with Composer and Packagist
