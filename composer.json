@@ -13,7 +13,7 @@
     ],
     "require":{
         "php":">=5.3.3",
-        "pantheon-systems/terminus": "dev-master#1883e6f"
+        "pantheon-systems/terminus": "dev-master#d00bd65"
     },
     "support":{
         "issues":"https://github.com/kalamuna/terminatur/issues"
