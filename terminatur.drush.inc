@@ -386,6 +386,11 @@ function drush_terminatur_pullsite($sitename = FALSE) {
  * Obliterate a local site
  */
 function drush_terminatur_crushsite($sitename = FALSE) {
+  // Confirm crush site
+  $confirm_choice = drush_confirm(dt('Do you really want to crush this site?'));
+  if (!$confirm_choice) {
+    return drush_set_error('TERMINATUR_ERROR', dt('Command cancelled.'));
+  }
   // Grabs info about the site
   if (!$sitename) {
     $sitename = drush_get_option('sitename');
