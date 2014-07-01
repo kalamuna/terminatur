@@ -20,7 +20,7 @@ function terminatur_bootstrap($force_refresh = FALSE) {
   _terminatur_load_default_key();
 
   // Make sure we have a key that'll work with Pantheon.
-  $pantheon_keys = drush_cache_get('pantheon-keys', 'terminatur');
+  $pantheon_keys = drush_cache_get('pantheon-keys-gotcha', 'terminatur');
   if (!$pantheon_keys) {
     // Check for a SSH key that works with Pantheon.
     $pantheon_keys = _terminatur_get_pantheon_keys();
@@ -29,7 +29,7 @@ function terminatur_bootstrap($force_refresh = FALSE) {
       $pantheon_keys = array(_terminatur_set_up_key());
       _terminatur_load_default_key();
     }
-    drush_cache_set('pantheon-keys', $pantheon_keys, 'terminatur');
+    drush_cache_set('pantheon-keys-gotcha', $pantheon_keys, 'terminatur');
   }
   else {
     // If we have a cached key(s), make sure it's loaded.
@@ -42,7 +42,7 @@ function terminatur_bootstrap($force_refresh = FALSE) {
     }
     if (!$key_loaded) {
       // If the key isn't loaded, remove it from the cache and start over.
-      drush_cache_clear_all('pantheon-keys', 'terminatur');
+      drush_cache_clear_all('pantheon-keys-gotcha', 'terminatur');
       terminatur_bootstrap($force_refresh);
     }
   }
@@ -119,6 +119,7 @@ function _terminatur_get_pantheon_keys() {
   // Get list of keys on Pantheon and keys on host.
   $pantheon_keys = terminus_api_user_sshkey_get($user_id);
   $pantheon_keys = array_values(drush_json_decode($pantheon_keys['json']));
+  drush_shell_exec('ssh-add -D');
   drush_shell_exec('ssh-add -L');
   $host_keys = drush_shell_exec_output();
   $pantheon_keys = array_map('_terminatur_extract_key', $pantheon_keys);
