@@ -16,46 +16,22 @@ define('TERMINATUR_TERMINATUR_ALIASES_FILE', TERMINATUR_DRUSH_DIR . 'terminatur.
  * necessary setup steps.
  */
 function terminatur_bootstrap($force_refresh = FALSE) {
-  // Load the Terminatur-generated ssh key if there's one.
-  _terminatur_load_default_key();
+  // Static cache the aliases
+  static $aliases;
 
-  // Make sure we have a key that'll work with Pantheon.
-  $pantheon_keys = drush_cache_get('pantheon-keys-gotcha', 'terminatur');
-  if (!$pantheon_keys) {
-    // Check for a SSH key that works with Pantheon.
-    $pantheon_keys = _terminatur_get_pantheon_keys();
-    // If user doesn't have a SSH key set up with Pantheon, offer to make one for them.
-    if (!$pantheon_keys) {
-      $pantheon_keys = array(_terminatur_set_up_key());
-      _terminatur_load_default_key();
+  if (!isset($aliases)) {
+    // Handle all the key things
+    _terminatur_keys();
+    // Download and parse the aliases file if it's not there.
+    // @todo: might want to do some sort of validation here first?
+    $aliases = array();
+    if (!file_exists(TERMINATUR_TERMINATUR_ALIASES_FILE) || $force_refresh === TRUE) {
+      _terminatur_download_aliases();
+      $aliases = _terminatur_parse_aliases();
     }
-    drush_cache_set('pantheon-keys-gotcha', $pantheon_keys, 'terminatur');
-  }
-  else {
-    // If we have a cached key(s), make sure it's loaded.
-    $key_loaded = FALSE;
-    foreach ($pantheon_keys->data as $key) {
-      if (_terminatur_is_key_loaded($key)) {
-        $key_loaded = TRUE;
-        break;
-      }
+    else {
+      require TERMINATUR_TERMINATUR_ALIASES_FILE;
     }
-    if (!$key_loaded) {
-      // If the key isn't loaded, remove it from the cache and start over.
-      drush_cache_clear_all('pantheon-keys-gotcha', 'terminatur');
-      terminatur_bootstrap($force_refresh);
-    }
-  }
-
-  // Download and parse the aliases file if it's not there.
-  // @todo: might want to do some sort of validation here first?
-  $aliases = array();
-  if (!file_exists(TERMINATUR_TERMINATUR_ALIASES_FILE) || $force_refresh === TRUE) {
-    _terminatur_download_aliases();
-    $aliases = _terminatur_parse_aliases();
-  }
-  else {
-    require TERMINATUR_TERMINATUR_ALIASES_FILE;
   }
 
   // @todo Validate the pantheon aliases file.
@@ -80,6 +56,44 @@ function _terminatur_get_session() {
   drush_terminus_pantheon_auth($email);
   // @todo Handle authentication failure.
   return terminus_bootstrap();
+}
+
+/**
+ * Returns data for the current Terminus session, authenticating if necessary.
+ *
+ * @return array
+ *   Terminus session data.
+ */
+function _terminatur_keys() {
+  // Load the Terminatur-generated ssh key if there's one.
+  _terminatur_load_default_key();
+  // Make sure we have a key that'll work with Pantheon.
+  $pantheon_keys = drush_cache_get('pantheon-keys-gotcha', 'terminatur');
+  if (!$pantheon_keys) {
+    // Check for a SSH key that works with Pantheon.
+    $pantheon_keys = _terminatur_get_pantheon_keys();
+    // If user doesn't have a SSH key set up with Pantheon, offer to make one for them.
+    if (!$pantheon_keys) {
+      $pantheon_keys = array(_terminatur_set_up_key());
+      _terminatur_load_default_key();
+    }
+    drush_cache_set('pantheon-keys-gotcha', $pantheon_keys, 'terminatur');
+  }
+  else {
+    // If we have a cached key(s), make sure it's loaded.
+    $key_loaded = FALSE;
+    foreach ($pantheon_keys->data as $key) {
+      if (_terminatur_is_key_loaded($key)) {
+        $key_loaded = TRUE;
+        break;
+      }
+    }
+    if (!$key_loaded) {
+      // If the key isn't loaded, remove it from the cache and start over.
+      drush_cache_clear_all('pantheon-keys-gotcha', 'terminatur');
+      _terminatur_keys();
+    }
+  }
 }
 
 /**
@@ -241,13 +255,13 @@ function _terminatur_parse_aliases() {
 /**
  * Remove uneeded environments
  */
-function _terminatur_strip_aliases(&$aliases) {
+function _terminatur_strip_aliases(&$sites) {
   // Remove all non-dev environments
   // @todo: eventually we want this to be all dev and multisite environments
   // if (strpos($key, '.test') !== FALSE || strpos($key, '.live') !== FALSE) {
-  foreach ($aliases as $key => $value) {
+  foreach ($sites as $key => $value) {
     if (strpos($key, '.dev') === FALSE) {
-      unset($aliases[$key]);
+      unset($sites[$key]);
     }
   }
 }
@@ -255,20 +269,29 @@ function _terminatur_strip_aliases(&$aliases) {
 /**
  * Remove uneeded environments
  */
-function _terminatur_aliases_options(&$aliases) {
+function _terminatur_aliases_options(&$sites) {
   // Parse remaining aliases so they can be Terminatud
-  foreach ($aliases as $key => $value) {
+  foreach ($sites as $key => $value) {
     // Get sitename and environment
     $site_parts = explode('.', $key);
-    $aliases[$key]['machine-name'] = $site_parts[0];
-    $aliases[$key]['env'] = $site_parts[1];
+    $sites[$key]['machine-name'] = $site_parts[0];
+    $sites[$key]['env'] = $site_parts[1];
 
     // Connect via terminus to get other fun stuff
-    $aliases[$key]['uuid'] = terminus_get_site_uuid_by_name($aliases[$key]['machine-name']);
+    // If there is a preexisting terminuatur alias file let's load the site
+    // uuid from there to save a request
+    $aliases = array();
+    if (file_exists(TERMINATUR_TERMINATUR_ALIASES_FILE)) {
+      require TERMINATUR_TERMINATUR_ALIASES_FILE;
+      $sites[$key]['uuid'] = $aliases[$key]['uuid'];
+    }
+    else {
+      $sites[$key]['uuid'] = terminus_get_site_uuid_by_name($sites[$key]['machine-name']);
+    }
 
     // Build other relevant things
-    $aliases[$key]['ssh-options'] .= ' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no';
-    $aliases[$key]['built-from'] = $key;
+    $sites[$key]['ssh-options'] .= ' -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no';
+    $sites[$key]['built-from'] = $key;
   }
 }
 
@@ -311,7 +334,9 @@ function _terminatur_data_options(&$aliases) {
     $aliases[$key]['terminatur']['database']['local-db'] = str_replace("-", "_", $aliases[$key]['machine-name'] . TERMINATUR_DB_SUFFIX);
     $aliases[$key]['terminatur']['database']['method'] = $method;
 
-    $bucket = terminus_latest_bucket($aliases[$key]['uuid'], $aliases[$key]['env'], 'database');
+    // This request doesn't make any sense
+    // $bucket = terminus_latest_bucket($aliases[$key]['uuid'], $aliases[$key]['env'], 'database');
+    $bucket = FALSE;
     $aliases[$key]['terminatur']['database']['download-bucket'] = $bucket ? $bucket : 'NONE';
 
   }
