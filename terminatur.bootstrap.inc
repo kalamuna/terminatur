@@ -177,7 +177,8 @@ function _terminatur_set_up_key() {
   drush_shell_exec('hostname -f');
   $hostname = drush_shell_exec_output();
   $key_file = getenv('HOME') . '/.ssh/' . TERMINATUR_SSH_KEY;
-  drush_shell_exec('ssh-keygen -C "terminatur@' . $hostname[0]  . '" -f "' . $key_file . '" -P "" -y');
+  $interact = file_exists($key_file) ? " -y" : "";
+  drush_shell_exec('ssh-keygen -C "terminatur@' . $hostname[0]  . '" -f "' . $key_file . '" -P ""' . $interact);
   // Read generated key in and submit it to Terminus.
   $key = file_get_contents($key_file . '.pub');
   terminus_api_sshkey_validate($user_id, $key);
