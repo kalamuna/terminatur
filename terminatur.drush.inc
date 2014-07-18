@@ -429,15 +429,16 @@ function drush_terminatur_crushsite($sitename = FALSE) {
   drush_log(dt("Removing site..."), 'warning');
 
   // @todo: to be consistence maybe we want these to be abstracted out a bit?
+  if (!_terminatur_files_remove($site, $destination)) {
+    return;
+  }
   if (!_terminatur_code_remove($site, $destination)) {
     return;
   }
   if (!_terminatur_data_remove($site, $destination, $db_user, $db_pass, $db_host, $db_port)) {
     return;
   }
-  if (!_terminatur_files_remove($site, $destination)) {
-    return;
-  }
+
 
   // Build vhost remove callback function
   $get_vhost_remove_func = '_terminatur_vhost_remove_' . TERMINATUR_ENV;
