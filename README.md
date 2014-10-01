@@ -60,6 +60,8 @@ they're missing.
 
     # Authenticate with Pantheon and pull down your aliases
     drush ta
+    # List terminatur site aliases
+    drush sa | grep terminatur
     # Download a site with all its files
     drush pullsite mysite.dev # mysite.dev is from the alias @terminatur.mysite.dev
     # Remove this site
