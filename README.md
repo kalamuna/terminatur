@@ -1,5 +1,11 @@
 # Terminatur
 
+## Deprecated.
+
+Many components of this software have reached end of life and the project is no longer actively maintained
+
+Please check out the successor project [Kalabox2](https://github.com/kalabox/kalabox). This project is still under development but it very actively supported and should reach feature parity with Kalabox 1 shortly. 
+
 Terminatur is a set of drush commands to extend the functionality provided by the amazing
 [Terminus](https://github.com/pantheon-systems/terminus)
 
